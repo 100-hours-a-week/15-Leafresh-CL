@@ -1,0 +1,101 @@
+name: AI Project CI
+
+on:
+  push:
+    branches: [ "develop", "main" ]
+    paths:
+      - 'AI-kellyn/**'
+      - 'AI-mac/**'
+
+  pull_request:
+    branches: [ "develop", "main" ]
+    paths:
+      - 'AI-kellyn/**'
+      - 'AI-mac/**'
+
+  workflow_dispatch:
+    inputs:
+      target_job:
+        description: '실행할 Job을 선택하세요'
+        required: false
+        type: choice
+        options:
+          - ci-kellyn
+          - ci-mac
+
+jobs:
+  ci-kellyn:
+    name: CI - AI-kellyn
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.target_job == 'ci-kellyn'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./AI-kellyn
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Lint
+        run: |
+          pip install flake8
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Unit Tests
+        run: |
+          pip install pytest
+          pytest ./tests
+      - name: Integration Tests
+        run: |
+          pip install pytest httpx
+          uvicorn main:app --host 0.0.0.0 --port 8000 --background &
+          sleep 5
+          pytest ./integration_tests
+          pkill uvicorn
+      - name: Build
+        run: zip -r kellyn-build.zip . 
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: kellyn-build
+          path: ./kellyn-build.zip
+
+  ci-mac:
+    name: CI - AI-mac
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.target_job == 'ci-mac'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./AI-mac
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Lint
+        run: |
+          pip install flake8
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Unit Tests
+        run: |
+          pip install pytest
+          pytest ./tests
+      - name: Integration Tests
+        run: |
+          pip install pytest httpx
+          uvicorn main:app --host 0.0.0.0 --port 8000 --background &
+          sleep 5
+          pytest ./integration_tests
+          pkill uvicorn
+      - name: Build
+        run: zip -r mac-build.zip .
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac-build
+          path: ./mac-build.zip

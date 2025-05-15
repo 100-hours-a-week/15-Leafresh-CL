@@ -1,0 +1,148 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ "develop", "main" ]
+  pull_request:
+    branches: [ "develop", "main" ]
+
+jobs:
+  setup:
+    name: Setup and Install Dependencies
+    runs-on: ubuntu-latest
+    outputs:
+      pnpm_cache_hit: ${{ steps.cache-pnpm.outputs.cache-hit }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Cache pnpm modules
+        id: cache-pnpm
+        uses: actions/cache@v3
+        with:
+          path: ./frontend/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('./frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./frontend
+
+  lint:
+    name: Lint
+    needs: setup
+    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Run ESLint
+        run: pnpm run lint
+
+  unit:
+    name: Unit Test
+    needs: setup
+    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Run Jest
+        run: pnpm run test
+
+  integration-test:
+    name: Integration Test
+    needs: setup
+    if: github.base_ref == 'main' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        # 필요에 따라 여러 설정으로 확장 (예: 다른 브라우저)
+        browser: [chromium]
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Install Playwright
+        run: pnpm add -D playwright
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build Next.js app for testing
+        run: pnpm run build
+      - name: Start Next.js app for testing
+        run: pnpm run start &
+        - name: Wait for App to Start (Health Check)
+          run: |
+            TIMEOUT=60
+            for i in $(seq 1 $TIMEOUT); do
+              if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 >/dev/null 2>&1 && [ "$status" -eq "200" ]; then
+                echo "Application is ready"
+                exit 0
+              fi
+              echo "Waiting for application... ($i/$TIMEOUT)"
+              sleep 1
+            done
+            echo "Application did not start within the timeout"
+            exit 1
+      - name: Run Playwright Tests (${{ matrix.browser }})
+        run: pnpm test:e2e --browser=${{ matrix.browser }}
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+  build-dev:
+    name: Build (develop only)
+    needs: [lint, unit, setup]
+    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Build
+        run: pnpm run build
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fe-build-dev
+          path: ./frontend/.next/
+
+  build-prod:
+    name: Build (main only PR)
+    needs: [integration-test, setup]
+    if: github.base_ref == 'main' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Build
+        run: pnpm run build
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fe-build-prod
+          path: ./frontend/.next/
