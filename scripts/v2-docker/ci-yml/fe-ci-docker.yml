@@ -1,0 +1,206 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ "develop", "main" ]
+  pull_request:
+    branches: [ "develop", "main" ]
+
+jobs:
+  setup:
+    name: Setup and Install Dependencies
+    runs-on: ubuntu-latest
+    outputs:
+      pnpm_cache_hit: ${{ steps.cache-pnpm.outputs.cache-hit }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Cache pnpm modules
+        id: cache-pnpm
+        uses: actions/cache@v3
+        with:
+          path: ./frontend/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('./frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./frontend
+
+  lint:
+    name: Lint
+    needs: setup
+    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Run ESLint
+        run: pnpm run lint
+
+  unit:
+    name: Unit Test
+    needs: setup
+    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Run Jest
+        run: pnpm run test
+
+  integration-test:
+    name: Integration Test
+    needs: setup
+    if: github.base_ref == 'main' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        # 필요에 따라 여러 설정으로 확장 (예: 다른 브라우저)
+        browser: [chromium]
+    steps:
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Install Playwright
+        run: pnpm add -D playwright
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build Next.js app for testing
+        run: pnpm run build
+      - name: Start Next.js app for testing
+        run: pnpm run start &
+        - name: Wait for App to Start (Health Check)
+          run: |
+            TIMEOUT=60
+            for i in $(seq 1 $TIMEOUT); do
+              if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 >/dev/null 2>&1 && [ "$status" -eq "200" ]; then
+                echo "Application is ready"
+                exit 0
+              fi
+              echo "Waiting for application... ($i/$TIMEOUT)"
+              sleep 1
+            done
+            echo "Application did not start within the timeout"
+            exit 1
+      - name: Run Playwright Tests (${{ matrix.browser }})
+        run: pnpm test:e2e --browser=${{ matrix.browser }}
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+  build-fe-dev-docker:
+    name: Build Frontend Docker (develop only)
+    needs: [lint, unit, setup] # 필요한 이전 작업들을 명시
+    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: Use cached pnpm modules
+        id: pnpm-cache
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Get pnpm cache directory
+        shell: pnpm
+        run: |
+          echo "pnpm_cache_path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
+        name: Cache pnpm modules
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Build Next.js App
+        run: pnpm run build
+      - name: Build Docker Image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          dockerfile: ./frontend/Dockerfile # Next.js Dockerfile 경로를 명시
+          tags: frontend-dev:latest
+          output: type=docker,dest=./docker_image_fe_dev.tar
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fe-docker-dev
+          path: ./docker_image_fe_dev.tar
+
+  build-fe-prod-docker:
+    name: Build Frontend Docker (main only PR)
+    needs: [integration-test, setup] # 필요한 이전 작업들을 명시
+    if: github.base_ref == 'main' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: Use cached pnpm modules
+        id: pnpm-cache
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Get pnpm cache directory
+        shell: pnpm
+        run: |
+          echo "pnpm_cache_path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
+        name: Cache pnpm modules
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Build Next.js App
+        run: pnpm run build
+      - name: Build Docker Image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          dockerfile: ./frontend/Dockerfile # Next.js Dockerfile 경로를 명시
+          tags: frontend-prod:latest
+          output: type=docker,dest=./docker_image_fe_prod.tar
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fe-docker-prod
+          path: ./docker_image_fe_prod.tar
