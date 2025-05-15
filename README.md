@@ -1,25 +1,14 @@
 # 15-Leafresh-CL
 # ☁️ Cloud Repository
 
-## 📁 디렉토리 구조
-
-물론입니다. 전체 내용을 다시 깔끔하게 구성한 `README.md` 마크다운을 아래에 제공합니다. 복사해서 그대로 사용하실 수 있습니다.
-
----
-
-```markdown
-# ☁️ Cloud Repository
-
-## 📁 디렉토리 구조
-
+## 📁 디렉토리 구조\
 ```
-
-.
+(project root directory)
 ├── performance-test
 │   ├── v1-bigbang
-│   │   ├── load\_k6.js
+│   │   ├── load_k6.js
 │   │   ├── result.json
-│   │   └── result\_stress.json
+│   │   └── result_stress.json
 │   ├── v2-docker
 │   │   └── init
 │   └── v3-k8s
@@ -27,12 +16,12 @@
 ├── README.md
 ├── scripts
 │   ├── v1-bigbang
-│   │   ├── discord\_notify.sh
-│   │   ├── kill\_process.sh
-│   │   ├── restart\_servers.sh
-│   │   ├── sftp\_uploads.sh
-│   │   ├── show\_log.sh
-│   │   └── start\_servers.sh
+│   │   ├── discord_notify.sh
+│   │   ├── kill_process.sh
+│   │   ├── restart_servers.sh
+│   │   ├── sftp_uploads.sh
+│   │   ├── show_log.sh
+│   │   └── start_servers.sh
 │   └── v2-docker
 │       ├── ai-ci.yml
 │       ├── be-ci.yml
@@ -50,11 +39,9 @@
 ## 👥 작업자 정보
 
 | 이름     | 닉네임        | 사진 |
-|----------|----------------|------|
-| 전찬호   | `@jchanho99`   | ![jchanho99](https://github.com/jchanho99.png) |
-| 이주미   | `@pieceofizzy` | ![pieceofizzy](https://github.com/pieceofizzy.png) |
-
-> 🔽 GitHub 프로필 이미지는 위와 같이 자동 연결됩니다. 저장소 내 이미지로 대체할 경우, 경로를 수정하세요.
+|:----------|:----------------|:------|
+| **닉네임** | `@jchanho99`   | `@pieceofizzy` |
+| **사진** | <img src="https://github.com/jchanho99.png" width="100" height="100"/> | <img src="https://github.com/pieceofizzy.png" width="100" height="100"/> |
 
 ---
 
@@ -88,9 +75,9 @@ leafresh-[서비스 종류]-[역할](-[환경: dev or prod or gpu])
 
 ### 예시
 
-* `leafresh-fe-server-dev`
-* `leafresh-be-db-prod`
-* `leafresh-ai-model-gpu`
+* `leafresh-gce-fe-dev`
+* `leafresh-gce-db-prod`
+* `leafresh-gce-ai-image-dev`
 
 ---
 
@@ -98,11 +85,3 @@ leafresh-[서비스 종류]-[역할](-[환경: dev or prod or gpu])
 
 * **`performance-test`**, **`scripts`**, **`terraform`** 디렉토리는 버전별로 (`v1-`, `v2-`, `v3-`) 관리됩니다.
 * 주요 환경은 `v2-docker`, `v3-k8s` 기준으로 운영됩니다.
-
-```
-
----
-
-필요 시 `Badge`, `Architecture Diagram`, `버전 히스토리`, 또는 각 디렉토리별 설명도 추가할 수 있습니다. 추가 원하시면 알려주세요.
-```
-
