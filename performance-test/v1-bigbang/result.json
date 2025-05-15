@@ -1,0 +1,163 @@
+{
+    "metrics": {
+        "http_req_tls_handshaking": {
+            "avg": 0.11927104959726628,
+            "min": 0,
+            "med": 0,
+            "max": 177.403966,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_blocked": {
+            "max": 214.212038,
+            "p(90)": 0.011218800000000006,
+            "p(95)": 0.0133318,
+            "avg": 0.2273213424456903,
+            "min": 0.000904,
+            "med": 0.006072
+        },
+        "iterations": {
+            "rate": 11.342315127943037,
+            "count": 4097
+        },
+        "http_req_receiving": {
+            "avg": 9.378198483573419,
+            "min": 0.014459,
+            "med": 0.08525,
+            "max": 786.881971,
+            "p(90)": 41.0267458,
+            "p(95)": 43.478817199999995
+        },
+        "data_received": {
+            "count": 297003479,
+            "rate": 822237.5037621215
+        },
+        "http_req_sending": {
+            "avg": 0.024219261752501813,
+            "min": 0.003911,
+            "med": 0.020147,
+            "max": 0.700857,
+            "p(90)": 0.040261200000000004,
+            "p(95)": 0.047561599999999996
+        },
+        "http_req_waiting": {
+            "avg": 392.9066013373219,
+            "min": 35.129324,
+            "med": 46.252655,
+            "max": 4592.049219,
+            "p(90)": 1881.603883,
+            "p(95)": 2305.7346369999996
+        },
+        "http_req_connecting": {
+            "avg": 0.09826333546497439,
+            "min": 0,
+            "med": 0,
+            "max": 49.978343,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "checks": {
+            "fails": 10550,
+            "passes": 9935,
+            "value": 0.48498901635342934
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 50
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 503.5500143014606,
+            "min": 39.620978,
+            "med": 118.066015,
+            "max": 4592.144884,
+            "p(90)": 2257.2732478,
+            "p(95)": 2672.9478339999996
+        },
+        "http_req_failed": {
+            "passes": 10550,
+            "fails": 9935,
+            "value": 0.5150109836465706
+        },
+        "http_reqs": {
+            "count": 20485,
+            "rate": 56.711575639715186
+        },
+        "vus_max": {
+            "value": 50,
+            "min": 50,
+            "max": 50
+        },
+        "data_sent": {
+            "count": 4416878,
+            "rate": 12227.87946245516
+        },
+        "iteration_duration": {
+            "p(95)": 4238.1481044,
+            "avg": 3014.2873087339517,
+            "min": 1551.644772,
+            "med": 3149.73933,
+            "max": 5852.929128,
+            "p(90)": 4034.416913
+        },
+        "http_req_failed{type:all}": {
+            "passes": 0,
+            "fails": 0,
+            "thresholds": {
+                "rate<0.20": false
+            },
+            "value": 0
+        },
+        "http_req_duration": {
+            "avg": 402.30901908264707,
+            "min": 35.200451,
+            "med": 46.362567,
+            "max": 4592.144884,
+            "p(90)": 1881.6891178,
+            "p(95)": 2305.8806186
+        }
+    },
+    "root_group": {
+        "checks": {
+            "FE status is 2xx": {
+                "name": "FE status is 2xx",
+                "path": "::FE status is 2xx",
+                "id": "c423a8849194c70df240a8657baac9fd",
+                "passes": 4097,
+                "fails": 0
+            },
+            "BE group creations status is 2xx": {
+                "passes": 0,
+                "fails": 4097,
+                "name": "BE group creations status is 2xx",
+                "path": "::BE group creations status is 2xx",
+                "id": "b308df414252b15f98b3721eb8827370"
+            },
+            "BE product list status is 2xx": {
+                "name": "BE product list status is 2xx",
+                "path": "::BE product list status is 2xx",
+                "id": "aad41194ee40bc84f60f1a979eab0faf",
+                "passes": 0,
+                "fails": 4097
+            },
+            "BE challenge group status is 2xx": {
+                "name": "BE challenge group status is 2xx",
+                "path": "::BE challenge group status is 2xx",
+                "id": "1b974e11ed0b5249041fbf9bd94b217f",
+                "passes": 4097,
+                "fails": 0
+            },
+            "AI recommendation status is 2xx": {
+                "fails": 2356,
+                "name": "AI recommendation status is 2xx",
+                "path": "::AI recommendation status is 2xx",
+                "id": "82b194ff50ddab38fd6730f3e0d069a0",
+                "passes": 1741
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {}
+    }
+}
