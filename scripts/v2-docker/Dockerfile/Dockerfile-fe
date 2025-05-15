@@ -1,0 +1,40 @@
+# Node.js 런타임 이미지 (Next.js 권장)
+FROM node:lts-alpine AS builder
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# 의존성 파일 복사
+COPY package.json pnpm-lock.yaml ./
+
+# 의존성 설치
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# 소스 코드 복사
+COPY . .
+
+# Next.js 빌드
+RUN pnpm run build
+
+# 프로덕션 환경을 위한 작은 이미지 생성
+FROM node:lts-alpine AS runner
+
+WORKDIR /app
+
+# 빌더 단계에서 빌드 결과 복사
+COPY --from=builder /app/.next .
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+
+# 필요한 종속성만 설치 (프로덕션 환경)
+RUN npm install --omit=dev
+
+# Next.js 서버 실행 명령어
+CMD ["node", "server.js"]
+
+# (선택 사항) 포트 노출
+EXPOSE 3000
+
+# Next.js 서버를 시작하기 위한 스크립트 (server.js 필요)
+# 또는 Next.js 자체 내장 서버를 사용할 수 있습니다.
+# CMD ["pnpm", "start"]
