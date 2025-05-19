@@ -16,7 +16,7 @@ resource "google_compute_subnetwork" "public" {
   network       = google_compute_network.vpc.id
   project       = var.project_id
   private_ip_google_access = false
-  tags          = merge(var.tags, {"tier" : "public"})
+  tags          = [var.tags["environment"], var.tags["team"], "tier-public"]
 }
 
 # Private Subnet (App) 생성
@@ -76,20 +76,4 @@ resource "google_compute_route" "route_private_app_to_gpu" {
   next_hop_ip = null
   next_hop_network = "projects/${var.project_id}/global/networks/${var.existing_gpu_vpc_network}"
   priority    = 1000
-}
-
-output "vpc_id" {
-  value = google_compute_network.vpc.id
-}
-
-output "public_subnet_id" {
-  value = google_compute_subnetwork.public.id
-}
-
-output "private_app_subnet_id" {
-  value = google_compute_subnetwork.private_app.id
-}
-
-output "private_db_subnet_id" {
-  value = google_compute_subnetwork.private_db.id
 }
