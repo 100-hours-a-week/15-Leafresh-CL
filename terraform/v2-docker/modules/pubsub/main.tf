@@ -8,5 +8,5 @@ resource "google_project_iam_member" "pubsub_iam_enable" {
 
 resource "google_pubsub_topic" "gpu_instance_topic" {
   project = var.project_id
-  name    = "gpu-instance-topic"
+  name    = "leafresh-pubsub"
 }

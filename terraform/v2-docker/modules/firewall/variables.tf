@@ -25,12 +25,22 @@ variable "db_tag" {
   type        = string
 }
 
-variable "gpu_instance_vpc_name" {
+variable "gpu1_instance_vpc_name" {
   description = "기존 GPU instance VPC의 이름"
   type        = string
 }
 
-variable "gpu_instance_vpc_cidr_blocks" {
+variable "gpu1_instance_vpc_cidr_blocks" {
+  description = "기존 GPU instance VPC의 CIDR 블록 리스트"
+  type        = list(string)
+}
+
+variable "gpu2_instance_vpc_name" {
+  description = "기존 GPU instance VPC의 이름"
+  type        = string
+}
+
+variable "gpu2_instance_vpc_cidr_blocks" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
   type        = list(string)
 }

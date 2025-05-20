@@ -3,7 +3,7 @@
 # Next.js GCE 인스턴스
 resource "google_compute_instance" "nextjs_instance" {
   project      = var.project_id
-  name         = "nextjs-instance"
+  name         = "leafresh-gce-fe"
   machine_type = "e2-medium" # 적절한 머신 타입 선택
   zone         = var.zone
   tags         = [var.nextjs_tag]
@@ -11,6 +11,7 @@ resource "google_compute_instance" "nextjs_instance" {
   boot_disk {
     initialize_params {
       image = "cos-cloud/cos-stable" # COS 이미지 사용
+      disk_size_gb = 25 
     }
   }
 
@@ -46,7 +47,7 @@ EOT
 # Spring Boot GCE 인스턴스
 resource "google_compute_instance" "springboot_instance" {
   project      = var.project_id
-  name         = "springboot-instance"
+  name         = "leafresh-gce-be"
   machine_type = "e2-medium" # 적절한 머신 타입 선택
   zone         = var.zone
   tags         = [var.springboot_tag]
@@ -54,6 +55,7 @@ resource "google_compute_instance" "springboot_instance" {
   boot_disk {
     initialize_params {
       image = "cos-cloud/cos-stable" # COS 이미지 사용
+      disk_size_gb = 25
     }
   }
 
@@ -88,21 +90,20 @@ EOT
 # MySQL 및 Redis GCE 인스턴스 (하나의 인스턴스에서 실행)
 resource "google_compute_instance" "db_instance" {
   project      = var.project_id
-  name         = "db-instance"
-  machine_type = "e2-medium" # 적절한 머신 타입 선택
+  name         = "leafresh-gce-db"
+  machine_type = "e2-medium"
   zone         = var.zone
   tags         = [var.db_tag]
 
   boot_disk {
     initialize_params {
       image = "cos-cloud/cos-stable" # COS 이미지 사용
-      disk_size_gb = 50 # 충분한 디스크 공간 확보
+      disk_size_gb = 50
     }
   }
 
   network_interface {
     subnetwork = var.db_subnet_self_link
-    # Private Subnet이므로 외부 IP 부여 안함
   }
 
   metadata = {
@@ -141,19 +142,4 @@ resource "google_dns_record_set" "nextjs_dns_record" {
   type         = "A"
   ttl          = 300
   rrdatas      = [google_compute_instance.nextjs_instance.network_interface[0].access_config[0].nat_ip]
-}
-
-output "nextjs_external_ip" {
-  description = "Next.js 인스턴스의 외부 IP 주소"
-  value       = google_compute_instance.nextjs_instance.network_interface[0].access_config[0].nat_ip
-}
-
-output "springboot_internal_ip" {
-  description = "Spring Boot 인스턴스의 내부 IP 주소"
-  value       = google_compute_instance.springboot_instance.network_interface[0].network_ip
-}
-
-output "db_internal_ip" {
-  description = "MySQL/Redis 인스턴스의 내부 IP 주소"
-  value       = google_compute_instance.db_instance.network_interface[0].network_ip
 }
