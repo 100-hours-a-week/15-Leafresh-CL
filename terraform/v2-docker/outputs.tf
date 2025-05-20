@@ -1,35 +1,34 @@
-output "vpc_id" {
-  value = module.network.vpc_id
+output "nextjs_external_ip" {
+  description = "Next.js 인스턴스의 외부 IP 주소"
+  value       = module.compute.nextjs_external_ip
 }
 
-output "public_subnet_id" {
-  value = module.network.public_subnet_id
+output "springboot_internal_ip" {
+  description = "Spring Boot 인스턴스의 내부 IP 주소"
+  value       = module.compute.springboot_internal_ip
 }
 
-output "private_app_subnet_id" {
-  value = module.network.private_app_subnet_id
+output "db_internal_ip" {
+  description = "MySQL/Redis 인스턴스의 내부 IP 주소"
+  value       = module.compute.db_internal_ip
 }
 
-output "private_db_subnet_id" {
-  value = module.network.private_db_subnet_id
+output "artifact_registry_nextjs_repo_url" {
+  description = "Next.js Artifact Registry 저장소 URL"
+  value       = module.artifact_registry.nextjs_repo_url
 }
 
-output "nextjs_public_ip" {
-  value = module.compute.nextjs_instance_ip
+output "artifact_registry_springboot_repo_url" {
+  description = "Spring Boot Artifact Registry 저장소 URL"
+  value       = module.artifact_registry.springboot_repo_url
 }
 
-output "springboot_private_ip" {
-  value = module.compute.springboot_instance_private_ip
+output "artifact_registry_db_repo_url" {
+  description = "DB Artifact Registry 저장소 URL"
+  value       = module.artifact_registry.db_repo_url
 }
 
-output "mysql_private_ip" {
-  value = module.sql.mysql_private_ip
-}
-
-output "redis_private_ip" {
-  value = module.redis.redis_private_ip
-}
-
-output "redis_port" {
-  value = module.redis.redis_port
+output "pubsub_topic_name" {
+  description = "Pub/Sub Topic 이름"
+  value       = module.pubsub.pubsub_topic_name
 }

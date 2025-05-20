@@ -1,113 +1,130 @@
 variable "project_id" {
-  type = string
-  description = "GCP Project ID"
-  # default = "leafresh" # 실제 GCP 프로젝트 ID로 변경
+  description = "GCP 프로젝트 ID"
+  type        = string
 }
 
 variable "region" {
-  type = string
-  description = "GCP Region"
-  # default = "asia-northeast3" # 필요에 따라 리전 변경
+  description = "GCP 리전"
+  type        = string
+  default     = "asia-northeast3" # 서울 리전
 }
 
 variable "zone" {
-  type = string
-  description = "GCP Zone"
-  # default = "asia-northeast3-a" # 필요에 따라 가용성 영역 변경
+  description = "GCP 존"
+  type        = string
+  default     = "asia-northeast3-a"
 }
 
-variable "vpc_name" {
-  type = string
-  description = "VPC 네트워크 이름"
-  # default = "three-tier-vpc"
+variable "vpc_cidr_block" {
+  description = "VPC의 CIDR 블록"
+  type        = string
+  default     = "10.0.0.0/16"
 }
 
-variable "vpc_cidr" {
-  type = string
-  description = "VPC CIDR 블록"
-  # default = "10.0.0.0/16"
+variable "nextjs_subnet_cidr" {
+  description = "Next.js Public Subnet의 CIDR 블록"
+  type        = string
+  default     = "10.0.1.0/24"
 }
 
-variable "public_subnet_name" {
-  type = string
-  description = "Public Subnet 이름"
-  # default = "public-subnet"
+variable "springboot_subnet_cidr" {
+  description = "Spring Boot Private Subnet의 CIDR 블록"
+  type        = string
+  default     = "10.0.2.0/24"
 }
 
-variable "public_subnet_cidr" {
-  type = string
-  description = "Public Subnet CIDR 블록"
-  # default = "10.0.1.0/24"
+variable "db_subnet_cidr" {
+  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
+  type        = string
+  default     = "10.0.3.0/24"
 }
 
-variable "private_app_subnet_name" {
-  type = string
-  description = "Private Subnet (App) 이름"
-  # default = "private-app-subnet"
+variable "nextjs_tag" {
+  description = "Next.js 인스턴스에 적용할 네트워크 태그"
+  type        = string
+  default     = "nextjs-instance"
 }
 
-variable "private_app_subnet_cidr" {
-  type = string
-  description = "Private Subnet (App) CIDR 블록"
-  # default = "10.0.2.0/24"
+variable "springboot_tag" {
+  description = "Spring Boot 인스턴스에 적용할 네트워크 태그"
+  type        = string
+  default     = "springboot-instance"
 }
 
-variable "private_db_subnet_name" {
-  type = string
-  description = "Private Subnet (DB) 이름"
-  # default = "private-db-subnet"
+variable "db_tag" {
+  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+  type        = string
+  default     = "db-instance"
 }
 
-variable "private_db_subnet_cidr" {
-  type = string
-  description = "Private Subnet (DB) CIDR 블록"
-  # default = "10.0.3.0/24"
+variable "gpu_instance_vpc_name" {
+  description = "기존 GPU instance VPC의 이름"
+  type        = string
+  default     = "existing-gpu-vpc" # 실제 GPU VPC 이름으로 변경 필요
 }
 
-variable "nextjs_instance_name" {
-  type = string
-  description = "Next.js 인스턴스 이름"
-  # default = "nextjs-instance"
-}
-
-variable "springboot_instance_name" {
-  type = string
-  description = "SpringBoot 인스턴스 이름"
-  # default = "springboot-instance"
-}
-
-variable "mysql_instance_name" {
-  type = string
-  description = "MySQL 인스턴스 이름"
-  # default = "mysql-instance"
-}
-
-variable "redis_instance_name" {
-  type = string
-  description = "Redis 인스턴스 이름"
-  # default = "redis-instance"
-}
-
-variable "existing_gpu_vpc_network" {
-  type = string
-  description = "기존 GPU 인스턴스 VPC 네트워크 이름"
-  # default = "existing-gpu-vpc" # 실제 GPU 인스턴스 VPC 이름으로 변경
-}
-
-variable "existing_gpu_vpc_cidrs" {
-  type = list(string)
-  description = "기존 GPU 인스턴스 VPC CIDR 블록 목록"
-  default = ["10.0.3.0/24", "10.0.4.0/24"] # 실제 GPU 인스턴스 VPC CIDR 목록으로 변경
+variable "gpu_instance_vpc_cidr_blocks" {
+  description = "기존 GPU instance VPC의 CIDR 블록 리스트"
+  type        = list(string)
+  default     = ["10.0.3.0/24", "10.0.4.0/24"] # 실제 GPU VPC CIDR로 변경 필요
 }
 
 variable "gcs_bucket_name" {
-  type = string
-  description = "GCS 버킷 이름"
-  default = "leafresh-images"
+  description = "Spring Boot와 연결할 GCS 버킷명"
+  type        = string
+  default     = "leafresh-images" # 실제 GCS 버킷명으로 변경 필요
 }
 
 variable "cloud_dns_zone_name" {
-  type = string
-  description = "Cloud DNS 영역 이름"
-  # default = "leafresh-app"
+  description = "기존 Cloud DNS Zone의 이름"
+  type        = string
+  default     = "leafresh-app-zone" # 실제 Cloud DNS Zone 이름으로 변경 필요
+}
+
+variable "cloud_dns_record_name" {
+  description = "Cloud DNS에서 생성할 A 레코드의 이름"
+  type        = string
+  default     = "leafresh.app"
+}
+
+variable "nextjs_repo_name" {
+  description = "Next.js Docker 이미지를 저장할 Artifact Registry 저장소 이름"
+  type        = string
+  default     = "nextjs-repo"
+}
+
+variable "springboot_repo_name" {
+  description = "Spring Boot Docker 이미지를 저장할 Artifact Registry 저장소 이름"
+  type        = string
+  default     = "springboot-repo"
+}
+
+variable "db_repo_name" {
+  description = "MySQL/Redis Docker 이미지를 저장할 Artifact Registry 저장소 이름"
+  type        = string
+  default     = "db-repo"
+}
+
+variable "nextjs_docker_image_tag" {
+  description = "Next.js Docker 이미지 태그"
+  type        = string
+  default     = "latest"
+}
+
+variable "springboot_docker_image_tag" {
+  description = "Spring Boot Docker 이미지 태그"
+  type        = string
+  default     = "latest"
+}
+
+variable "mysql_docker_image_tag" {
+  description = "MySQL Docker 이미지 태그"
+  type        = string
+  default     = "mysql:8.0"
+}
+
+variable "redis_docker_image_tag" {
+  description = "Redis Docker 이미지 태그"
+  type        = string
+  default     = "redis:latest"
 }
