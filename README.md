@@ -16,7 +16,7 @@
 (project root directory)
 ├── performance-test
 │   ├── v1-bigbang
-│   │   ├── load_k6.js
+│   │   ├── load_stress_k6.js
 │   │   ├── result.json
 │   │   └── result_stress.json
 │   ├── v2-docker
@@ -51,10 +51,6 @@
     ├── v2-docker
     │   ├── main.tf
     │   ├── modules
-    │   │   ├── artifact-registry
-    │   │   │   ├── main.tf
-    │   │   │   ├── outputs.tf
-    │   │   │   └── variables.tf
     │   │   ├── compute
     │   │   │   ├── main.tf
     │   │   │   ├── outputs.tf
@@ -66,11 +62,28 @@
     │   │   │   ├── main.tf
     │   │   │   ├── outputs.tf
     │   │   │   └── variables.tf
-    │   │   ├── pubsub
+    │   │   └── pubsub
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       └── variables.tf
+    │   ├── outputs.tf
+    │   ├── provider.tf
+    │   └── variables.tf
+    ├── v2-source
+    │   ├── main.tf
+    │   ├── modules
+    │   │   ├── compute
     │   │   │   ├── main.tf
     │   │   │   ├── outputs.tf
     │   │   │   └── variables.tf
-    │   │   └── sql
+    │   │   ├── firewall
+    │   │   │   ├── main.tf
+    │   │   │   └── variables.tf
+    │   │   ├── network
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   └── pubsub
     │   │       ├── main.tf
     │   │       ├── outputs.tf
     │   │       └── variables.tf
