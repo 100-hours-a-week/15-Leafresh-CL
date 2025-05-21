@@ -39,7 +39,7 @@ resource "google_compute_firewall" "allow_springboot_to_nextjs" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443"]
+    ports    = ["80", "443", "3000:"]
   }
 }
 
@@ -83,7 +83,7 @@ resource "google_compute_firewall" "allow_springboot_to_gpu1" {
 
   allow {
     protocol = "tcp"
-    ports    = ["any"] # 필요한 포트로 제한
+    ports    = ["8000"] # 필요한 포트로 제한
   }
 }
 
@@ -96,7 +96,7 @@ resource "google_compute_firewall" "allow_gpu1_to_springboot" {
 
   allow {
     protocol = "tcp"
-    ports    = ["any"] # 필요한 포트로 제한
+    ports    = ["8080"] # 필요한 포트로 제한
   }
 }
 
@@ -109,11 +109,11 @@ resource "google_compute_firewall" "allow_springboot_to_gpu2" {
 
   allow {
     protocol = "tcp"
-    ports    = ["any"] # 필요한 포트로 제한
+    ports    = ["8000"] # 필요한 포트로 제한
   }
 }
 
-resource "google_compute_firewall" "allow_gpu_to_springboot2" {
+resource "google_compute_firewall" "allow_gpu2_to_springboot" {
   project = var.project_id
   name    = "leafresh-firewall-gpu2-to-spring"
   network = var.network_name
@@ -122,7 +122,7 @@ resource "google_compute_firewall" "allow_gpu_to_springboot2" {
 
   allow {
     protocol = "tcp"
-    ports    = ["any"] # 필요한 포트로 제한
+    ports    = ["8080"] # 필요한 포트로 제한
   }
 # SSH 접속 허용 (모든 인스턴스)
 resource "google_compute_firewall" "allow_ssh" {

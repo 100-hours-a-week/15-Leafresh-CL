@@ -55,14 +55,15 @@ variable "springboot_docker_image" {
   type        = string
 }
 
-variable "mysql_docker_image" {
-  description = "MySQL Docker 이미지 경로"
+variable "mysql_root_password" {
+  description = "MySQL root 비밀번호"
   type        = string
+  sensitive   = true
 }
 
-variable "redis_docker_image" {
-  description = "Redis Docker 이미지 경로"
-  type        = string
+variable "mysql_database" {
+  description = "MySQL 초기 DB 이름"
+  default     = "leafresh"
 }
 
 variable "gcs_bucket_name" {
