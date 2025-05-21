@@ -78,53 +78,35 @@ variable "gcs_bucket_name" {
 variable "cloud_dns_zone_name" {
   description = "기존 Cloud DNS Zone의 이름"
   type        = string
-  default     = "leafresh-app-zone" # 실제 Cloud DNS Zone 이름으로 변경 필요
+  default     = "leafresh-app" # 실제 Cloud DNS Zone 이름으로 변경 필요
 }
 
 variable "cloud_dns_record_name" {
   description = "Cloud DNS에서 생성할 A 레코드의 이름"
   type        = string
-  default     = "leafresh.app"
+  default     = "leafresh.app."
 }
 
-variable "nextjs_repo_name" {
-  description = "Next.js Docker 이미지를 저장할 Artifact Registry 저장소 이름"
-  type        = string
-  default     = "nextjs-repo"
-}
-
-variable "springboot_repo_name" {
-  description = "Spring Boot Docker 이미지를 저장할 Artifact Registry 저장소 이름"
-  type        = string
-  default     = "springboot-repo"
-}
-
-variable "db_repo_name" {
-  description = "MySQL/Redis Docker 이미지를 저장할 Artifact Registry 저장소 이름"
-  type        = string
-  default     = "db-repo"
-}
-
-variable "nextjs_docker_image_tag" {
-  description = "Next.js Docker 이미지 태그"
+variable "nextjs_docker_image" {
+  description = "nextjs Docker 이미지"
   type        = string
   default     = "latest"
 }
 
-variable "springboot_docker_image_tag" {
-  description = "Spring Boot Docker 이미지 태그"
+variable "springboot_docker_image" {
+  description = "springboot Docker 이미지"
   type        = string
   default     = "latest"
 }
 
-variable "mysql_docker_image_tag" {
-  description = "MySQL Docker 이미지 태그"
+variable "mysql_docker_image" {
+  description = "MySQL Docker 이미지"
   type        = string
   default     = "mysql:8.0"
 }
 
-variable "redis_docker_image_tag" {
-  description = "Redis Docker 이미지 태그"
+variable "redis_docker_image" {
+  description = "Redis Docker 이미지"
   type        = string
-  default     = "redis:latest"
+  default     = "redis-stack:latest"
 }

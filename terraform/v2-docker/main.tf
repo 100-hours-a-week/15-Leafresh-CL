@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = "6.35.0"
     }
   }
 }
@@ -34,13 +34,6 @@ module "firewall" {
   gpu_instance_vpc_cidr_blocks = var.gpu_instance_vpc_cidr_blocks
 }
 
-# Artifact Registry 모듈 호출
-module "artifact_registry" {
-  source     = "./modules/artifact_registry"
-  project_id = var.project_id
-  region     = var.region
-}
-
 # Compute 모듈 호출
 module "compute" {
   source                  = "./modules/compute"
@@ -53,10 +46,10 @@ module "compute" {
   nextjs_tag              = var.nextjs_tag
   springboot_tag          = var.springboot_tag
   db_tag                  = var.db_tag
-  nextjs_docker_image     = "${module.artifact_registry.nextjs_repo_host}/${var.project_id}/${var.nextjs_repo_name}:${var.nextjs_docker_image_tag}"
-  springboot_docker_image = "${module.artifact_registry.springboot_repo_host}/${var.project_id}/${var.springboot_repo_name}:${var.springboot_docker_image_tag}"
-  mysql_docker_image      = "${module.artifact_registry.db_repo_host}/${var.project_id}/${var.db_repo_name}:${var.mysql_docker_image_tag}"
-  redis_docker_image      = "${module.artifact_registry.db_repo_host}/${var.project_id}/${var.db_repo_name}:${var.redis_docker_image_tag}"
+  nextjs_docker_image     = var.nextjs_docker_image 
+  springboot_docker_image = var.springboot_docker_image
+  mysql_docker_image      = var.mysql_docker_image
+  redis_docker_image      = var.redis_docker_image
   gcs_bucket_name         = var.gcs_bucket_name
   cloud_dns_zone_name     = var.cloud_dns_zone_name
   cloud_dns_record_name   = var.cloud_dns_record_name
