@@ -1,15 +1,21 @@
-output "vpc_id" {
-  value = google_compute_network.vpc.id
+# modules/network/outputs.tf
+
+output "vpc_name" {
+  description = "생성된 VPC의 이름"
+  value       = google_compute_network.vpc.name
 }
 
-output "public_subnet_id" {
-  value = google_compute_subnetwork.public.id
+output "nextjs_subnet_self_link" {
+  description = "Next.js Public Subnet의 Self Link"
+  value       = google_compute_subnetwork.nextjs_public_subnet.self_link
 }
 
-output "private_app_subnet_id" {
-  value = google_compute_subnetwork.private_app.id
+output "springboot_subnet_self_link" {
+  description = "Spring Boot Private Subnet의 Self Link"
+  value       = google_compute_subnetwork.springboot_private_subnet.self_link
 }
 
-output "private_db_subnet_id" {
-  value = google_compute_subnetwork.private_db.id
+output "db_subnet_self_link" {
+  description = "MySQL/Redis Private Subnet의 Self Link"
+  value       = google_compute_subnetwork.db_private_subnet.self_link
 }

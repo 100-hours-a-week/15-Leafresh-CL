@@ -1,19 +1,60 @@
-resource "google_sql_database_instance" "mysql" {
-  name             = var.mysql_instance_name
-  project          = var.project_id
-  region           = var.region
-  database_version = "MYSQL_8_0" # 필요에 따라 버전 변경
-  settings {
-    tier = "db-f1-micro" # 필요에 따라 서비스 등급 변경
-    ip_configuration {
-      ipv4_enabled    = false
-      private_network = var.private_db_subnet_id
-    }
-  }
-  deletion_protection  = false # 실제 운영 환경에서는 true로 설정 권장
-  tags                 = merge(var.tags, {"tier" : "database", "app" : "mysql"})
+provider "google" {
+    project = var.project_id
+    region = var.region
+    zone = var.zone
 }
 
-output "mysql_private_ip" {
-  value = google_sql_database_instance.mysql.private_ip_address
+resource "google_compute_instance" "leafresh_gce_db"{
+    name = var.instance_name
+    machine_type = var.machine_type
+    zone = var.zone
+
+    boot_disk{
+        initialize_params{
+            image = "ubuntu-os-cloud/ubuntu-2204-lts" 
+            size = 30
+        }
+    }
+
+    network_interface {
+        network = var.network
+        subnetwork = var.subnetwork
+    }
+
+    metadata_startup_script = <<-EOF
+#!/bin/bash
+apt-get update
+apt-get install -y docker.io
+
+# Redis 컨테이너 실행
+docker run -d --name redis-server -p 6379:6379 redis:latest
+
+# MySQL 컨테이너 실행
+docker run -d --name mysql-server \
+-e MYSQL_ROOT_PASSWORD=${var.mysql_root_password} \
+-e MYSQL_DATABASE=${var.mysql_database} \
+-p 3306:3306 \
+mysql:8.0
+EOF
+
+    tags = ["leafresh-db"]
+
+    service_account {
+        email = var.service_account_email
+        scopes = ["cloud-platform"]
+    }
+}
+
+resource "google_compute_firewall" "allow_db_ports"{
+    name = "leafresh-db-ports"
+    network = var.network
+
+    allow {
+        protocol = "tcp"
+        ports = ["3306", "6379"]
+    }
+
+    target_tags = ["leafresh-db"]
+    direction = "INGRESS"
+    source_tags = ["leafresh-be"]  
 }

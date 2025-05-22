@@ -1,110 +1,69 @@
-module "network" {
-  source = "./modules/network"
-
-  project_id                = var.project_id
-  region                    = var.region
-  vpc_name                  = var.vpc_name
-  vpc_cidr                  = var.vpc_cidr
-  public_subnet_name        = var.public_subnet_name
-  public_subnet_cidr        = var.public_subnet_cidr
-  private_app_subnet_name   = var.private_app_subnet_name
-  private_app_subnet_cidr   = var.private_app_subnet_cidr
-  private_db_subnet_name    = var.private_db_subnet_name
-  private_db_subnet_cidr    = var.private_db_subnet_cidr
-  existing_gpu_vpc_network  = var.existing_gpu_vpc_network
-  existing_gpu_vpc_cidrs    = var.existing_gpu_vpc_cidrs
-  tags                      = {
-    "environment" = "dev"
-    "team"        = "leafresh"
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
   }
 }
 
-module "compute" {
-  source = "./modules/compute"
-
-  project_id            = var.project_id
-  zone                = var.zone
-  public_subnet_id    = module.network.public_subnet_id
-  private_app_subnet_id = module.network.private_app_subnet_id
-  private_db_subnet_id  = module.network.private_db_subnet_id
-  nextjs_instance_name  = var.nextjs_instance_name
-  springboot_instance_name = var.springboot_instance_name
-  tags                  = {
-    "environment" = "dev"
-    "team"        = "leafresh"
-  }
-}
-
-module "sql" {
-  source = "./modules/sql"
-
-  project_id            = var.project_id
-  region                = var.region
-  private_db_subnet_id  = module.network.private_db_subnet_id
-  mysql_instance_name   = var.mysql_instance_name
-  tags                  = {
-    "environment" = "dev"
-    "team"        = "leafresh"
-  }
-}
-
-module "redis" {
-  source = "./modules/redis"
-
-  project_id            = var.project_id
-  region                = var.region
-  zone                  = var.zone
-  private_db_subnet_id  = module.network.private_db_subnet_id
-  redis_instance_name   = var.redis_instance_name
-  tags                  = {
-    "environment" = "dev"
-    "team"        = "leafresh"
-  }
-}
-
-# GCS 버킷 접근 권한 설정 (SpringBoot 인스턴스에 서비스 계정 연결 필요)
-resource "google_project_iam_member" "springboot_gcs_access" {
+provider "google" {
   project = var.project_id
-  role    = "roles/storage.objectViewer" # 필요에 따라 역할 변경
-  member  = "serviceAccount:${google_compute_instance.springboot.service_account.0.email}"
-  condition {
-    title = "gcs-bucket-access"
-    expression = "resource.name == 'projects/_/buckets/${var.gcs_bucket_name}'"
-  }
+  region  = var.region
 }
 
-# Cloud DNS 레코드 생성 (Next.js 인스턴스 IP와 연결)
-resource "google_dns_managed_zone" "dns_zone" {
-  name        = var.cloud_dns_zone_name
-  dns_name    = "${var.cloud_dns_zone_name}."
-  project     = var.project_id
-  visibility  = "public"
+# 네트워크 모듈 호출
+module "network" {
+  source                = "./modules/network"
+  project_id            = var.project_id
+  vpc_cidr_block        = var.vpc_cidr_block
+  nextjs_subnet_cidr    = var.nextjs_subnet_cidr
+  springboot_subnet_cidr = var.springboot_subnet_cidr
+  db_subnet_cidr        = var.db_subnet_cidr
 }
 
-resource "google_dns_record_set" "frontend_dns" {
-  name         = var.cloud_dns_zone_name
-  managed_zone = google_dns_managed_zone.dns_zone.name
-  type         = "A"
-  ttl          = 300
-  rrdatas      = [module.compute.nextjs_instance_ip]
+# 방화벽 모듈 호출
+module "firewall" {
+  source                       = "./modules/firewall"
+  project_id                   = var.project_id
+  network_name                 = module.network.vpc_name
+  nextjs_tag                   = var.nextjs_tag
+  springboot_tag               = var.springboot_tag
+  db_tag                       = var.db_tag
+  gpu_instance_vpc_name        = var.gpu_instance_vpc_name
+  gpu_instance_vpc_cidr_blocks = var.gpu_instance_vpc_cidr_blocks
 }
 
-output "nextjs_public_ip" {
-  value = module.compute.nextjs_instance_ip
+# Artifact Registry 모듈 호출
+module "artifact_registry" {
+  source     = "./modules/artifact_registry"
+  project_id = var.project_id
+  region     = var.region
 }
 
-output "springboot_private_ip" {
-  value = module.compute.springboot_instance_private_ip
+# Compute 모듈 호출
+module "compute" {
+  source                  = "./modules/compute"
+  project_id              = var.project_id
+  region                  = var.region
+  zone                    = var.zone
+  nextjs_subnet_self_link = module.network.nextjs_subnet_self_link
+  springboot_subnet_self_link = module.network.springboot_subnet_self_link
+  db_subnet_self_link     = module.network.db_subnet_self_link
+  nextjs_tag              = var.nextjs_tag
+  springboot_tag          = var.springboot_tag
+  db_tag                  = var.db_tag
+  nextjs_docker_image     = "${module.artifact_registry.nextjs_repo_host}/${var.project_id}/${var.nextjs_repo_name}:${var.nextjs_docker_image_tag}"
+  springboot_docker_image = "${module.artifact_registry.springboot_repo_host}/${var.project_id}/${var.springboot_repo_name}:${var.springboot_docker_image_tag}"
+  mysql_docker_image      = "${module.artifact_registry.db_repo_host}/${var.project_id}/${var.db_repo_name}:${var.mysql_docker_image_tag}"
+  redis_docker_image      = "${module.artifact_registry.db_repo_host}/${var.project_id}/${var.db_repo_name}:${var.redis_docker_image_tag}"
+  gcs_bucket_name         = var.gcs_bucket_name
+  cloud_dns_zone_name     = var.cloud_dns_zone_name
+  cloud_dns_record_name   = var.cloud_dns_record_name
 }
 
-output "mysql_private_ip" {
-  value = module.sql.mysql_private_ip
-}
-
-output "redis_private_ip" {
-  value = module.redis.redis_private_ip
-}
-
-output "redis_port" {
-  value = module.redis.redis_port
+# Pub/Sub 모듈 호출
+module "pubsub" {
+  source     = "./modules/pubsub"
+  project_id = var.project_id
 }
