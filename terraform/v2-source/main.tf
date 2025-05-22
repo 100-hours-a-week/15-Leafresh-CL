@@ -1,27 +1,3 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "6.35.0"
-    }
-  }
-}
-
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
-# 네트워크 모듈 호출
-module "network" {
-  source                = "./modules/network"
-  project_id            = var.project_id
-  vpc_cidr_block        = var.vpc_cidr_block
-  nextjs_subnet_cidr    = var.nextjs_subnet_cidr
-  springboot_subnet_cidr = var.springboot_subnet_cidr
-  db_subnet_cidr        = var.db_subnet_cidr
-}
-
 # 방화벽 모듈 호출
 module "firewall" {
   source                       = "./modules/firewall"

@@ -9,6 +9,6 @@ terraform {
 }
 
 provider "google" {
-  project = "leafresh" # 여기에 실제 GCP 프로젝트 ID를 입력하세요.
-  region  = "asia-northeast3"      # 서울 리전으로 설정
+  project = "leafresh"        # 여기에 실제 GCP 프로젝트 ID를 입력하세요.
+  region  = "asia-northeast3" # 서울 리전으로 설정
 }

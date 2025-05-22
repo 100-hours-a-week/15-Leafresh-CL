@@ -124,6 +124,7 @@ resource "google_compute_firewall" "allow_gpu2_to_springboot" {
     protocol = "tcp"
     ports    = ["8080"] # 필요한 포트로 제한
   }
+}
 # SSH 접속 허용 (모든 인스턴스)
 resource "google_compute_firewall" "allow_ssh" {
   project = var.project_id

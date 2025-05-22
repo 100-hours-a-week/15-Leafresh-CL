@@ -45,16 +45,6 @@ variable "db_tag" {
   type        = string
 }
 
-variable "nextjs_docker_image" {
-  description = "Next.js Docker 이미지 경로"
-  type        = string
-}
-
-variable "springboot_docker_image" {
-  description = "Spring Boot Docker 이미지 경로"
-  type        = string
-}
-
 variable "mysql_root_password" {
   description = "MySQL root 비밀번호"
   type        = string

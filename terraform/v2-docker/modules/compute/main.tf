@@ -10,8 +10,8 @@ resource "google_compute_instance" "nextjs_instance" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
-      disk_size_gb = 25 
+      image        = "ubuntu-os-cloud/ubuntu-2204-lts"
+      disk_size_gb = 25
     }
   }
 
@@ -54,7 +54,7 @@ resource "google_compute_instance" "springboot_instance" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
+      image        = "ubuntu-os-cloud/ubuntu-2204-lts"
       disk_size_gb = 25
     }
   }
@@ -80,9 +80,9 @@ EOT
 
   service_account {
     scopes = [
-      "cloud-platform", # GCS 및 다른 GCP 서비스 접근 권한
+      "cloud-platform",                                       # GCS 및 다른 GCP 서비스 접근 권한
       "https://www.googleapis.com/auth/devstorage.read_only", # GCS 읽기 권한 예시
-      "https://www.googleapis.com/auth/dns.read_only", # Cloud DNS 읽기 권한 예시
+      "https://www.googleapis.com/auth/dns.read_only",        # Cloud DNS 읽기 권한 예시
     ]
   }
 }
@@ -97,7 +97,7 @@ resource "google_compute_instance" "db_instance" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
+      image        = "ubuntu-os-cloud/ubuntu-2204-lts"
       disk_size_gb = 50
     }
   }
