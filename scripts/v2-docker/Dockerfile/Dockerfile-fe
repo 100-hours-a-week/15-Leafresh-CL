@@ -1,40 +1,54 @@
-# Node.js 런타임 이미지 (Next.js 권장)
-FROM node:lts-alpine AS builder
-
-# 작업 디렉토리 설정
+# Stage 1: Build the Next.js application
+FROM node:22-alpine AS builder
 WORKDIR /app
 
-# 의존성 파일 복사
-COPY package.json pnpm-lock.yaml ./
+# Copy package.json and pnpm-lock.yaml to install dependencies
+COPY package*.json pnpm-lock.yaml ./
 
-# 의존성 설치
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Install pnpm globally and then install project dependencies
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
 
-# 소스 코드 복사
+# Copy the rest of the application code
 COPY . .
 
-# Next.js 빌드
+# Build the Next.js application
 RUN pnpm run build
 
-# 프로덕션 환경을 위한 작은 이미지 생성
-FROM node:lts-alpine AS runner
 
+
+# Stage 2: Create the production-ready image
+FROM node:22-alpine AS runner
 WORKDIR /app
 
-# 빌더 단계에서 빌드 결과 복사
-COPY --from=builder /app/.next .
+# Set environment to production
+ENV NODE_ENV production
+
+# Create a non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+# Copy necessary files from the builder stage
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
 
-# 필요한 종속성만 설치 (프로덕션 환경)
-RUN npm install --omit=dev
+# Switch to the non-root user
+USER nodejs
 
-# Next.js 서버 실행 명령어
-CMD ["node", "server.js"]
-
-# (선택 사항) 포트 노출
+# Expose the port Next.js runs on
 EXPOSE 3000
 
-# Next.js 서버를 시작하기 위한 스크립트 (server.js 필요)
-# 또는 Next.js 자체 내장 서버를 사용할 수 있습니다.
-# CMD ["pnpm", "start"]
+# Command to run the Next.js application
+CMD ["pnpm", "run", "start"]
+
+# Optional: If using Next.js standalone output, uncomment the following line
+# CMD ["node", "server.js"]
+
+# Optional: Add a healthcheck (adjust the URL if needed)
+# HEALTHCHECK --interval=5m --timeout=3s CMD curl -f http://localhost:3000 || exit 1
+
+# Optional: If you need specific packages for Alpine (e.g., for image processing like sharp)
+# RUN apk add --no-cache vips-dev
+# RUN npm install --no-optional sharp
