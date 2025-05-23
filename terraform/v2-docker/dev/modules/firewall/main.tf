@@ -152,12 +152,31 @@ resource "google_compute_firewall" "allow_gpu2_to_springboot" {
     protocol = "icmp"
   }
 }
+
+# IAP를 통한 SSH 접속 허용 (Private Subnet 인스턴스에만 적용)
+resource "google_compute_firewall" "allow_iap_ssh" {
+  project = var.project_id
+  name    = "allow-iap-ssh"
+  network = var.network_name
+  # Spring Boot 및 DB 인스턴스에만 IAP 적용
+  target_tags = [var.springboot_tag, var.db_tag]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  # IAP가 사용하는 IP 주소 범위
+  source_ranges = ["35.235.240.0/20"]
+  description   = "Allow SSH access through IAP to private instances."
+}
+
 # SSH 접속 허용 (모든 인스턴스)
 resource "google_compute_firewall" "allow_ssh" {
   project = var.project_id
   name    = "allow-ssh"
   network = var.network_name
-  target_tags = [var.nextjs_tag, var.springboot_tag, var.db_tag]
+  target_tags = [var.nextjs_tag]
 
   allow {
     protocol = "tcp"

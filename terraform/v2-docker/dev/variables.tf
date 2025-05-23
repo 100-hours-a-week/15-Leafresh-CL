@@ -109,3 +109,8 @@ variable "cloud_dns_record_name" {
   type        = string
   default     = "dev-leafresh.app"
 }
+
+variable "iap_user_email" {
+  description = "IAP 터널링 권한을 부여할 GCP 사용자 이메일 주소"
+  type        = string
+}

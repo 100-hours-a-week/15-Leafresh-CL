@@ -48,3 +48,18 @@ module "pubsub" {
   project_id = var.project_id
   project_number = var.project_number
 }
+
+# IAP 터널링을 허용할 사용자에게 IAM 역할 부여 (예: 자신의 GCP 사용자 계정)
+# 이메일 주소를 자신의 GCP 계정 이메일로 변경하세요.
+resource "google_project_iam_member" "iap_tunnel_user" {
+  project = var.project_id
+  role    = "roles/iap.tunnelResourceAccessor"
+  member  = "user:${var.iap_user_email}" # <<-- 자신의 GCP 이메일 주소로 변경
+}
+
+# SSH를 통해 IAP 터널링을 할 경우 GCE Instance Connect API를 사용하므로 해당 권한도 필요
+resource "google_project_iam_member" "gce_instance_connect_user" {
+  project = var.project_id
+  role    = "roles/compute.instanceAdmin.v1" # 또는 roles/compute.instanceAdmin 같은 덜 강력한 역할
+  member  = "user:${var.iap_user_email}" # <<-- 자신의 GCP 이메일 주소로 변경
+}
