@@ -11,6 +11,9 @@ resource "google_compute_firewall" "allow_nextjs_external" {
     protocol = "tcp"
     ports    = ["80", "443", "22"]
   }
+  allow {
+    protocol = "icmp"
+  }
 
   source_ranges = ["0.0.0.0/0"]
 }
@@ -27,6 +30,9 @@ resource "google_compute_firewall" "allow_nextjs_to_springboot" {
     protocol = "tcp"
     ports    = ["8080"] # Spring Boot 포트 (예시)
   }
+  allow {
+    protocol = "icmp"
+  }
 }
 
 # Spring Boot -> Next.js 통신 허용 (Next.js가 응답할 때)
@@ -39,7 +45,10 @@ resource "google_compute_firewall" "allow_springboot_to_nextjs" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443", "3000:"]
+    ports    = ["80", "443", "3000"]
+  }
+  allow {
+    protocol = "icmp"
   }
 }
 
@@ -56,6 +65,9 @@ resource "google_compute_firewall" "allow_springboot_to_db" {
     protocol = "tcp"
     ports    = ["3306", "6379"] # MySQL, Redis 포트
   }
+  allow {
+    protocol = "icmp"
+  }
 }
 
 # MySQL/Redis -> Spring Boot 통신 허용 (DB가 응답할 때)
@@ -69,6 +81,9 @@ resource "google_compute_firewall" "allow_db_to_springboot" {
   allow {
     protocol = "tcp"
     ports    = ["8080"] # Spring Boot 포트 (예시)
+  }
+  allow {
+    protocol = "icmp"
   }
 }
 
@@ -85,6 +100,9 @@ resource "google_compute_firewall" "allow_springboot_to_gpu1" {
     protocol = "tcp"
     ports    = ["8000"] # 필요한 포트로 제한
   }
+  allow {
+    protocol = "icmp"
+  }
 }
 
 resource "google_compute_firewall" "allow_gpu1_to_springboot" {
@@ -97,6 +115,9 @@ resource "google_compute_firewall" "allow_gpu1_to_springboot" {
   allow {
     protocol = "tcp"
     ports    = ["8080"] # 필요한 포트로 제한
+  }
+  allow {
+    protocol = "icmp"
   }
 }
 
@@ -111,6 +132,9 @@ resource "google_compute_firewall" "allow_springboot_to_gpu2" {
     protocol = "tcp"
     ports    = ["8000"] # 필요한 포트로 제한
   }
+  allow {
+    protocol = "icmp"
+  }
 }
 
 resource "google_compute_firewall" "allow_gpu2_to_springboot" {
@@ -124,6 +148,9 @@ resource "google_compute_firewall" "allow_gpu2_to_springboot" {
     protocol = "tcp"
     ports    = ["8080"] # 필요한 포트로 제한
   }
+  allow {
+    protocol = "icmp"
+  }
 }
 # SSH 접속 허용 (모든 인스턴스)
 resource "google_compute_firewall" "allow_ssh" {
@@ -135,6 +162,9 @@ resource "google_compute_firewall" "allow_ssh" {
   allow {
     protocol = "tcp"
     ports    = ["22"]
+  }
+  allow {
+    protocol = "icmp"
   }
 
   source_ranges = ["0.0.0.0/0"] # 특정 IP로 제한하는 것이 좋음
