@@ -44,7 +44,7 @@ sudo docker run -d \
   --name nextjs-frontend \
   -p 80:3000 \
   -p 443:3000 \
-  jchanho99/frontend-dev:1.0.0
+  jchanho99/frontend-dev:latest
 EOF
 
   service_account {
@@ -72,18 +72,30 @@ resource "google_compute_instance" "springboot_instance" {
     # Private Subnet이므로 외부 IP 부여 안함
   }
 
+
   metadata_startup_script = <<-EOF
 #!/bin/bash
-apt update
-# Java 21 (OpenJDK) 설치
-sudo apt install -y openjdk-21-jdk
-# JAVA_HOME 설정 (선택)
-echo "export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> ~/.bashrc
-echo "export PATH=$JAVA_HOME/bin:$PATH" >> ~/.bashrc
-source ~/.bashrc
-# 버전 확인
-java -version
-javac -version
+
+# Docker 설치
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg lsb-release
+sudo mkdir -m 0755 -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Docker 사용자 그룹에 현재 사용자 추가 (선택 사항, 필요 시)
+# sudo usermod -aG docker ubuntu 
+
+# Docker Hub에서 이미지 다운로드 및 실행
+sudo docker run -d \
+  --name springboot-backend \
+  -p 80:8080 \
+  -p 443:8080 \
+  jchanho99/backend-dev:latest
 EOF
 
   service_account {
