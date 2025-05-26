@@ -21,7 +21,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: latest
       - name: Cache pnpm modules
         id: cache-pnpm
         uses: actions/cache@v3
@@ -32,7 +32,7 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: ./frontend
+        working-directory: ./
 
   lint:
     name: Lint
@@ -41,11 +41,20 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: ./
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
       - name: Use cached pnpm modules
         if: steps.setup.outputs.pnpm_cache_hit == 'true'
         run: echo "Using cached pnpm modules"
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
       - name: Run ESLint
         run: pnpm run lint
 
@@ -56,11 +65,20 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: ./
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
       - name: Use cached pnpm modules
         if: steps.setup.outputs.pnpm_cache_hit == 'true'
         run: echo "Using cached pnpm modules"
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
       - name: Run Jest
         run: pnpm run test
 
@@ -71,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: ./
     strategy:
       fail-fast: false
       matrix:
@@ -114,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: ./
     steps:
       - name: Use cached pnpm modules
         if: steps.setup.outputs.pnpm_cache_hit == 'true'
@@ -134,7 +152,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: ./
     steps:
       - name: Use cached pnpm modules
         if: steps.setup.outputs.pnpm_cache_hit == 'true'

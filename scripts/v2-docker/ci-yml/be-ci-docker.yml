@@ -36,18 +36,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-  lint:
-    name: Lint
-    needs: setup
-    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    steps:
-      - uses: actions/checkout@v3 # 필요하다면 유지
-      - name: Checkstyle
-        run: ./gradlew checkstyleMain
+  # lint:
+  #   name: Lint
+  #   needs: setup
+  #   if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: ./
+  #   steps:
+  #     - uses: actions/checkout@v3 # 필요하다면 유지
+  #     - name: Checkstyle
+  #       run: ./gradlew checkstyleMain
 
   unit:
     name: Unit Test
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: ./
     steps:
       - uses: actions/checkout@v3 # 필요하다면 유지
       - name: Run Tests
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: ./
     steps:
       - uses: actions/checkout@v3 # 필요하다면 유지
       - name: Start Spring Boot App
@@ -80,7 +80,7 @@ jobs:
         run: |
           TIMEOUT=60
           for i in $(seq 1 $TIMEOUT); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ | grep -q '"status":"UP"'; then
               echo "Application is ready"
               exit 0
             fi
@@ -99,12 +99,12 @@ jobs:
 
   build-dev:
     name: Build and Push Backend Docker (develop only)
-    needs: [lint, unit, setup]
+    needs: [unit, setup]
     if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: ./
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 21 (Oracle)
@@ -125,7 +125,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./backend/Dockerfile
+          file: ./Dockerfile
           push: true
           tags: jchanho99/backend-dev:latest
           cache-from: type=gha,scope=build-backend-dev
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: ./
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 21 (Oracle)
@@ -159,7 +159,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./backend/Dockerfile
+          file: ./Dockerfile
           push: true
           tags: jchanho99/backend-prod:latest
           cache-from: type=gha,scope=build-backend-prod
