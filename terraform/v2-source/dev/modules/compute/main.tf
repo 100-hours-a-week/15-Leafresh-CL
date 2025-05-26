@@ -28,6 +28,12 @@ apt update
 # Node.js 22 설치 (NodeSource 공식 설치 스크립트)
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 apt install -y nodejs
+
+git clone --branch v1.0.5 --depth 1 https://github.com/100-hours-a-week/15-Leafresh-FE.git
+cd 15-Leafresh-FE
+pnpm run install
+pnpm run build
+pnpm run start
 EOF
 
   service_account {
@@ -65,6 +71,11 @@ JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))
 echo "export JAVA_HOME=$JAVA_HOME" > /etc/profile.d/java.sh
 echo "export PATH=\$JAVA_HOME/bin:\$PATH" >> /etc/profile.d/java.sh
 chmod +x /etc/profile.d/java.sh
+
+git clone --branch v1.0.0 --depth 1 https://github.com/100-hours-a-week/15-Leafresh-BE.git
+cd 15-Leafresh-BE
+./gradlew build
+./gradlew bootJar &
 EOF
 
   service_account {
