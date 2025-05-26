@@ -28,7 +28,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 # Copy necessary files from the builder stage
-COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
@@ -51,3 +51,4 @@ CMD ["pnpm", "run", "start"]
 # Optional: If you need specific packages for Alpine (e.g., for image processing like sharp)
 # RUN apk add --no-cache vips-dev
 # RUN npm install --no-optional sharp
+

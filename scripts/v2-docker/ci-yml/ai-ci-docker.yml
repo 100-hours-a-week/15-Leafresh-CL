@@ -39,10 +39,10 @@ jobs:
           python-version: "3.12"
       - name: Install Dependencies
         run: pip install -r requirements.txt
-      - name: Lint
-        run: |
-          pip install flake8
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      #- name: Lint
+      #  run: |
+      #    pip install flake8
+      #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Unit Tests
         run: |
           pip install pytest
@@ -84,10 +84,10 @@ jobs:
           python-version: "3.12"
       - name: Install Dependencies
         run: pip install -r requirements.txt
-      - name: Lint
-        run: |
-          pip install flake8
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      #- name: Lint
+      #  run: |
+      #    pip install flake8
+      #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Unit Tests
         run: |
           pip install pytest

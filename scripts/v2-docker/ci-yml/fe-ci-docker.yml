@@ -179,9 +179,9 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/frontend-dev:latest # Replace 'your-dockerhub-username' with your actual Docker Hub username
-          cache-from: type=gha,scope=build-frontend-dev
-          cache-to: type=gha,mode=max,scope=build-frontend-dev
+          tags: jchanho99/frontend-dev:latest
+          # cache-from: type=gha,scope=build-frontend-dev
+          # cache-to: type=gha,mode=max,scope=build-frontend-dev
 
   build-fe-prod-docker:
     name: Build Frontend Docker (main only PR)
@@ -228,6 +228,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: your-dockerhub-username/frontend-prod:latest # Replace 'your-dockerhub-username' with your actual Docker Hub username
-          cache-from: type=gha,scope=build-frontend-prod
-          cache-to: type=gha,mode=max,scope=build-frontend-prod
+          tags: jchanho99/frontend-prod:latest
+          # cache-from: type=gha,scope=build-frontend-prod
+          # cache-to: type=gha,mode=max,scope=build-frontend-prod
+
