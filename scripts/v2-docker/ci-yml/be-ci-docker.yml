@@ -78,13 +78,15 @@ jobs:
           SPRING_PROFILES_ACTIVE: test # 테스트 환경 활성화 (선택 사항)
       - name: Wait for App to Start
         run: |
-          TIMEOUT=60
+          TIMEOUT=120
           for i in $(seq 1 $TIMEOUT); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ | grep -q '"status":"UP"'; then
-              echo "Application is ready"
+            status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 || echo "000")
+            echo "Status code: $status_code"
+            if [ "$status_code" -eq 200 ] || [ "$status_code" -eq 401 ]; then
+              echo "Application is ready (HTTP $status_code)"
               exit 0
             fi
-            echo "Waiting for application... ($i/$TIMEOUT)"
+            echo "Waiting for application... ($i/$TIMEOUT, status: $status_code)"
             sleep 1
           done
           echo "Application did not start within the timeout"
@@ -92,8 +94,7 @@ jobs:
       - name: Integration Test
         run: |
           ./gradlew integrationTest
-          curl -X GET http://localhost:8080/api/challenges/events
-          curl -X GET http://localhost:8080/api/challenges/personal
+          curl -X GET http://localhost:8080/api/challenges/group/categories
       - name: Stop Spring Boot App
         run: pkill -f 'org.springframework.boot.loader.JarLauncher' # 또는 애플리케이션 실행 방식에 따른 프로세스 종료
 

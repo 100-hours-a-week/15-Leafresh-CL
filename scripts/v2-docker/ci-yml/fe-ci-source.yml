@@ -26,8 +26,8 @@ jobs:
         id: cache-pnpm
         uses: actions/cache@v3
         with:
-          path: ./frontend/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('./frontend/pnpm-lock.yaml') }}
+          path: ./node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('./pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
       - name: Install Dependencies
@@ -143,7 +143,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: fe-build-dev
-          path: ./frontend/.next/
+          path: ./.next/
 
   build-prod:
     name: Build (main only PR)
@@ -163,4 +163,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: fe-build-prod
-          path: ./frontend/.next/
+          path: ./.next/
