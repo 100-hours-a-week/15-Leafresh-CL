@@ -31,8 +31,9 @@ apt install -y nodejs
 
 git clone --branch v1.0.5 --depth 1 https://github.com/100-hours-a-week/15-Leafresh-FE.git
 cd 15-Leafresh-FE
-pnpm run install
-pnpm run build
+npm -i g pnpm
+pnpm install
+pnpm build
 pnpm run start
 EOF
 

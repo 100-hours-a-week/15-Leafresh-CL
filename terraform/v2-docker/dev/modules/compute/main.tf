@@ -69,7 +69,7 @@ resource "google_compute_instance" "springboot_instance" {
 
   network_interface {
     subnetwork = var.springboot_subnet_self_link
-    # Private Subnet이므로 외부 IP 부여 안함
+    access_config {}
   }
 
 
@@ -160,7 +160,7 @@ services:
       - internal_network # 내부 통신용 네트워크
 
   redis:
-    image: redis/redis-stack:latest
+    image: redislabs/rebloom:2.8.1
     container_name: leafresh-redis
     restart: always
     ports:
