@@ -1,5 +1,5 @@
 # 사용할 Java 런타임 이미지를 선택합니다.
-FROM openjdk:17-jre-slim
+FROM openjdk:21-jre-slim
 
 # 컨테이너 내에서 애플리케이션이 실행될 디렉토리를 설정합니다.
 WORKDIR /app
