@@ -134,73 +134,19 @@ resource "google_compute_instance" "db_instance" {
     subnetwork = var.db_subnet_self_link
   }
 
-  metadata_startup_script = <<-EOF
-#!/bin/bash
-
-# Docker 설치 (더 상세하고 공식 권장 방식)
-sudo apt update
-sudo apt install -y ca-certificates curl gnupg lsb-release
-sudo mkdir -m 0755 -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-sudo ufw allow 6379/tcp
-sudo ufw allow 8001/tcp
-sudo ufw allow 22/tcp
-echo "y" | sudo ufw enable
-
-# docker-compose.yml 파일 생성
-cat << 'EOT' > /home/ubuntu/docker-compose.yml
-version: '3.8'
-
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: leafresh-mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${var.mysql_root_password}
-      MYSQL_DATABASE: ${var.mysql_database} 
-      MYSQL_USER: ${var.db_user} 
-      MYSQL_PASSWORD: ${var.db_user_password} 
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql # 데이터 영속성을 위한 볼륨
-    networks:
-      - internal_network # 내부 통신용 네트워크
-
-  redis:
-    image: redislabs/rebloom:2.8.1
-    container_name: leafresh-redis
-    restart: always
-    ports:
-      - "6379:6379"
-      - "8001:8001"
-    volumes:
-      - redis_data:/data
-    networks:
-      - internal_network # 내부 통신용 네트워크
-
-volumes:
-  mysql_data:
-  redis_data:
-
-networks:
-  internal_network:
-    driver: bridge # Docker 내부 네트워크
-EOT
-
-# Docker Compose 실행
-sudo docker compose -f /home/ubuntu/docker-compose.yml up -d
-EOF
+  metadata_startup_script = templatefile("${path.module}/startup/db_startup.sh.tpl", {
+    mysql_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
+    redis_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
+    mysql_root_password = "Rlatldms!2!3"
+    mysql_database      = "leafresh"
+    mysql_user          = "root"
+    mysql_user_password = "Rlatldms!2!3"
+    redis_port          = "6379"
+    redis_host          = "localhost"
+  })
 
   service_account {
-    scopes = ["cloud-platform"] # 필요한 권한 부여
+    scopes = ["cloud-platform"]
   }
 }
 
