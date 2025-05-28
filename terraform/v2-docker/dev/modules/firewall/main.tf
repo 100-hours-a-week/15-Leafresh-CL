@@ -94,7 +94,7 @@ resource "google_compute_firewall" "allow_springboot_to_gpu1" {
   name    = "leafresh-firewall-spring-to-gpu1"
   network = var.network_name
   target_tags = [var.springboot_tag]
-  source_ranges = var.gpu1_instance_vpc_cidr_blocks
+  source_ranges = [var.gpu1_instance_vpc_cidr_block]
 
   allow {
     protocol = "tcp"
@@ -110,7 +110,7 @@ resource "google_compute_firewall" "allow_gpu1_to_springboot" {
   name    = "leafresh-firewall-gpu1-to-spring"
   network = var.network_name
   target_tags = [var.springboot_tag]
-  source_ranges = var.gpu1_instance_vpc_cidr_blocks
+  source_ranges = [var.gpu1_instance_vpc_cidr_block]
 
   allow {
     protocol = "tcp"
@@ -126,7 +126,7 @@ resource "google_compute_firewall" "allow_springboot_to_gpu2" {
   name    = "leafresh-firewall-spring-to-gpu2"
   network = var.network_name
   target_tags = [var.springboot_tag]
-  source_ranges = var.gpu2_instance_vpc_cidr_blocks
+  source_ranges = [var.gpu2_instance_vpc_cidr_block]
 
   allow {
     protocol = "tcp"
@@ -142,7 +142,7 @@ resource "google_compute_firewall" "allow_gpu2_to_springboot" {
   name    = "leafresh-firewall-gpu2-to-spring"
   network = var.network_name
   target_tags = [var.springboot_tag]
-  source_ranges = var.gpu2_instance_vpc_cidr_blocks
+  source_ranges = [var.gpu2_instance_vpc_cidr_block]
 
   allow {
     protocol = "tcp"

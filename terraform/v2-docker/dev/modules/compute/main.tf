@@ -25,6 +25,12 @@ resource "google_compute_instance" "nextjs_instance" {
   metadata_startup_script = <<-EOF
 #!/bin/bash
 
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 3000/tcp
+sudo ufw allow 22/tcp
+echo "y" | sudo ufw enable
+
 # Docker 설치
 sudo apt update
 sudo apt install -y ca-certificates curl gnupg lsb-release
@@ -44,6 +50,7 @@ sudo docker run -d \
   --name nextjs-frontend \
   -p 80:3000 \
   -p 443:3000 \
+  -p 3000:3000 \
   jchanho99/frontend-dev:latest
 EOF
 
@@ -76,6 +83,10 @@ resource "google_compute_instance" "springboot_instance" {
   metadata_startup_script = <<-EOF
 #!/bin/bash
 
+sudo ufw allow 8080/tcp
+sudo ufw allow 22/tcp
+echo "y" | sudo ufw enable
+
 # Docker 설치
 sudo apt update
 sudo apt install -y ca-certificates curl gnupg lsb-release
@@ -93,8 +104,7 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 # Docker Hub에서 이미지 다운로드 및 실행
 sudo docker run -d \
   --name springboot-backend \
-  -p 80:8080 \
-  -p 443:8080 \
+  -p 8080:8080 \
   jchanho99/backend-dev:latest
 EOF
 
@@ -137,6 +147,11 @@ echo \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+sudo ufw allow 6379/tcp
+sudo ufw allow 8001/tcp
+sudo ufw allow 22/tcp
+echo "y" | sudo ufw enable
 
 # docker-compose.yml 파일 생성
 cat << 'EOT' > /home/ubuntu/docker-compose.yml

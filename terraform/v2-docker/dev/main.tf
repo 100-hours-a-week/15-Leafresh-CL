@@ -6,15 +6,17 @@ module "firewall" {
   nextjs_tag                    = var.nextjs_tag
   springboot_tag                = var.springboot_tag
   db_tag                        = var.db_tag
-  gpu1_instance_vpc_name        = var.gpu_instance_vpc_name
-  gpu1_instance_vpc_cidr_blocks = var.gpu_instance_vpc_cidr_blocks
-  gpu2_instance_vpc_name        = var.gpu_instance_vpc_name
-  gpu2_instance_vpc_cidr_blocks = var.gpu_instance_vpc_cidr_blocks
+  gpu1_instance_vpc_name        = var.gpu1_instance_vpc_name
+  gpu1_instance_vpc_cidr_block = var.gpu1_instance_vpc_cidr_block
+  gpu2_instance_vpc_name        = var.gpu2_instance_vpc_name
+  gpu2_instance_vpc_cidr_block = var.gpu2_instance_vpc_cidr_block
 }
 # 네트워크 모듈 호출
 module "network" {
   source                 = "./modules/network"
   project_id             = var.project_id
+  project_id_gpu1        = var.project_id_gpu1
+  project_id_gpu2        = var.project_id_gpu2
   region                 = var.region
   vpc_cidr_block         = var.vpc_cidr_block
   nextjs_subnet_cidr     = var.nextjs_subnet_cidr
@@ -63,3 +65,5 @@ resource "google_project_iam_member" "gce_instance_connect_user" {
   role    = "roles/compute.instanceAdmin.v1" # 또는 roles/compute.instanceAdmin 같은 덜 강력한 역할
   member  = "user:${var.iap_user_email}" # <<-- 자신의 GCP 이메일 주소로 변경
 }
+
+

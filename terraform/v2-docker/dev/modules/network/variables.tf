@@ -5,6 +5,16 @@ variable "project_id" {
   type        = string
 }
 
+variable "project_id_gpu1" {
+  description = "GCP GPU1 프로젝트 ID"
+  type        = string
+}
+
+variable "project_id_gpu2" {
+  description = "GCP GPU2 프로젝트 ID"
+  type        = string
+}
+
 variable "region" {
   description = "GCP 리전"
   type        = string
@@ -13,6 +23,24 @@ variable "region" {
 variable "vpc_cidr_block" {
   description = "VPC의 CIDR 블록"
   type        = string
+}
+
+variable "dev_cidr_block" {
+  description = "VPC의 CIDR 블록"
+  type        = string
+  default     = "10.0.1.0/22"
+}
+
+variable "gpu1_cidr_block" {
+  description = "VPC의 CIDR 블록"
+  type        = string
+  default     = "10.0.3.0/24"
+}
+
+variable "gpu2_cidr_block" {
+  description = "VPC의 CIDR 블록"
+  type        = string
+  default     = "10.0.4.0/24"
 }
 
 variable "nextjs_subnet_cidr" {

@@ -67,3 +67,39 @@ resource "google_compute_router_nat" "nat_gateway" {
   # Private Google Access가 필요하지 않은 경우, "NO_PUBLIC_IPS" 옵션도 고려할 수 있습니다.
   # 하지만 일반적인 외부 통신에는 "ALL_IP_RANGES"가 더 유연합니다.
 }
+
+resource "google_compute_network_peering" "dev-to-gpu1" {
+  name         = "leafresh-peering-dev-to-gpu1"
+  network      = "projects/${var.project_id}/global/networks/leafresh-vpc"
+  peer_network = "projects/${var.project_id_gpu1}/global/networks/leafresh-vpc"
+
+  export_custom_routes = true
+  import_custom_routes = true
+}
+
+resource "google_compute_network_peering" "gpu1-to-dev" {
+  name         = "leafresh-peering-gpu1-to-dev"
+  network      = "projects/${var.project_id_gpu1}/global/networks/leafresh-vpc"
+  peer_network = "projects/${var.project_id}/global/networks/leafresh-vpc"
+
+  export_custom_routes = true
+  import_custom_routes = true
+}
+
+resource "google_compute_network_peering" "dev-to-gpu2" {
+  name         = "leafresh-peering-dev-to-gpu2"
+  network      = "projects/${var.project_id}/global/networks/leafresh-vpc"
+  peer_network = "projects/${var.project_id_gpu2}/global/networks/leafresh-vpc-gpu2"
+
+  export_custom_routes = true
+  import_custom_routes = true
+}
+
+resource "google_compute_network_peering" "gpu2-to-dev" {
+  name         = "leafresh-peering-gpu2-to-dev"
+  network      = "projects/${var.project_id_gpu2}/global/networks/leafresh-vpc-gpu2"
+  peer_network = "projects/${var.project_id}/global/networks/leafresh-vpc"
+  
+  export_custom_routes = true
+  import_custom_routes = true
+}

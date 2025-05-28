@@ -3,6 +3,16 @@ variable "project_id" {
   type        = string
 }
 
+variable "project_id_gpu1" {
+  description = "GCP GPU1 프로젝트 ID"
+  type        = string
+}
+
+variable "project_id_gpu2" {
+  description = "GCP GPU2 프로젝트 ID"
+  type        = string
+}
+
 variable "project_number" {
   description = "GCP 프로젝트 번호"
   type        = string
@@ -80,16 +90,28 @@ variable "mysql_root_password" {
   sensitive   = true
 }
 
-variable "gpu_instance_vpc_name" {
-  description = "기존 GPU instance VPC의 이름"
+variable "gpu1_instance_vpc_name" {
+  description = "기존 GPU1 instance VPC의 이름"
   type        = string
-  default     = "existing-gpu-vpc" # 실제 GPU VPC 이름으로 변경 필요
+  default     = "leafresh-vpc" # 실제 GPU VPC 이름으로 변경 필요
 }
 
-variable "gpu_instance_vpc_cidr_blocks" {
+variable "gpu2_instance_vpc_name" {
+  description = "기존 GPU2 instance VPC의 이름"
+  type        = string
+  default     = "leafresh-vpc-gpu2" # 실제 GPU VPC 이름으로 변경 필요
+}
+
+variable "gpu1_instance_vpc_cidr_block" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
-  type        = list(string)
-  default     = ["10.0.3.0/24", "10.0.4.0/24"] # 실제 GPU VPC CIDR로 변경 필요
+  type        = string
+  default     = "10.0.3.0/24"
+}
+
+variable "gpu2_instance_vpc_cidr_block" {
+  description = "기존 GPU instance VPC의 CIDR 블록 리스트"
+  type        = string
+  default     = "10.0.4.0/24"
 }
 
 variable "gcs_bucket_name" {
@@ -112,5 +134,10 @@ variable "cloud_dns_record_name" {
 
 variable "iap_user_email" {
   description = "IAP 터널링 권한을 부여할 GCP 사용자 이메일 주소"
+  type        = string
+}
+
+variable "gce_service_account_email" {
+  description = "Pub/Sub Pull을 위한 GCE 서비스 계정 주소"
   type        = string
 }

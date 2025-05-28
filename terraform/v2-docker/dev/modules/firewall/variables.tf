@@ -30,9 +30,9 @@ variable "gpu1_instance_vpc_name" {
   type        = string
 }
 
-variable "gpu1_instance_vpc_cidr_blocks" {
+variable "gpu1_instance_vpc_cidr_block" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
-  type        = list(string)
+  type        = string
 }
 
 variable "gpu2_instance_vpc_name" {
@@ -40,7 +40,7 @@ variable "gpu2_instance_vpc_name" {
   type        = string
 }
 
-variable "gpu2_instance_vpc_cidr_blocks" {
+variable "gpu2_instance_vpc_cidr_block" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
-  type        = list(string)
+  type        = string
 }
