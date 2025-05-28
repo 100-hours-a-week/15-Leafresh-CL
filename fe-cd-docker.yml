@@ -1,0 +1,140 @@
+name: Frontend CD (Docker-based)
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: '배포 환경 선택'
+        required: true
+        type: choice
+        options:
+          - develop
+          - prod
+
+jobs:
+  deploy:
+    name: FE Docker 배포
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+
+    steps:
+      - name: SSH 키 설정
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.FE_SSH_PRIVATE_KEY }}
+
+      - name: DockerHub 이미지 실행
+        id: deploy-step
+        run: |
+          set -e
+          ENV="${{ github.event.inputs.env }}"
+          HOST="${{ secrets.FE_DEV_HOST }}"
+          if [ "$ENV" = "prod" ]; then
+            HOST="${{ secrets.FE_PROD_HOST }}"
+          fi
+
+          IMAGE_NAME="frontend:${ENV}"
+          FULL_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME"
+
+          echo "배포 환경: $ENV"
+          echo "배포 서버: $HOST"
+          echo "Docker 이미지: $FULL_IMAGE"
+
+          ssh $HOST << EOF
+            set -e
+            echo "Docker 이미지 pull 중"
+            docker pull $FULL_IMAGE
+
+            if [ "$ENV" = "develop" ]; then
+              echo "개발 환경 배포 중"
+              docker stop frontend || true
+              docker rm frontend || true
+              docker run -d --name frontend -p 3000:3000 \
+                -e NODE_ENV=development \
+                --restart always \
+                $FULL_IMAGE
+            else
+              echo "운영 환경 Blue-Green 배포 시작"
+
+              CURRENT=\$(cat /opt/frontend-current 2>/dev/null || echo blue)
+              NEXT=\$( [ "\$CURRENT" = "blue" ] && echo green || echo blue )
+
+              echo "현재 컨테이너: frontend-\$CURRENT"
+              echo "새 컨테이너: frontend-\$NEXT"
+
+              docker run -d --name frontend-\$NEXT -p 3001:3000 \
+                -e NODE_ENV=production \
+                --restart always \
+                $FULL_IMAGE
+
+              echo "헬스체크 시작 (최대 60초 대기)"
+              for i in {1..60}; do
+                STATUS=\$(curl -s http://localhost:3001 | grep "<title>")
+                if [ ! -z "\$STATUS" ]; then
+                  echo "✅ 헬스체크 성공"
+                  break
+                fi
+                echo "대기 중(\$i)"
+                sleep 1
+              done
+
+              if [ -z "\$STATUS" ]; then
+                echo "❌ 헬스체크 실패"
+                docker stop frontend-\$NEXT || true
+                docker rm frontend-\$NEXT || true
+                exit 1
+              fi
+
+              echo "기존 컨테이너 제거"
+              docker stop frontend-\$CURRENT || true
+              docker rm frontend-\$CURRENT || true
+
+              echo "새 컨테이너 3000 포트로 재시작"
+              docker stop frontend-\$NEXT || true
+              docker rm frontend-\$NEXT || true
+              docker run -d --name frontend-\$NEXT -p 3000:3000 \
+                -e NODE_ENV=production \
+                --restart always \
+                $FULL_IMAGE
+
+              echo "\$NEXT" > /opt/frontend-current
+
+              echo "Blue-Green 배포 완료: frontend-\$NEXT → port 3000"
+            fi
+          EOF
+
+      - name: 상태 출력
+        id: set-status
+        run: echo "status=success" >> "$GITHUB_OUTPUT"
+        if: success()
+
+      - name: 실패 상태 출력
+        id: set-status
+        if: failure()
+        run: echo "status=failure" >> "$GITHUB_OUTPUT"
+
+  notify:
+    name: Discord 알림
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+
+    steps:
+      - name: 디스코드 알림 전송
+        run: |
+          STATUS="${{ needs.deploy.outputs.status }}"
+          ENV="${{ github.event.inputs.env }}"
+
+          if [ "$STATUS" = "success" ]; then
+            MESSAGE="✅ \`[FE $ENV]\` 배포 완료 — DockerHub 이미지 pull 및 헬스체크 성공"
+          elif [ "$STATUS" = "failure" ]; then
+            MESSAGE="🚨 \`[FE $ENV]\` 배포 실패 — 이미지 pull 또는 헬스체크 오류 발생"
+          else
+            MESSAGE="⚠️ \`[FE $ENV]\` 배포 상태: $STATUS"
+          fi
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}

@@ -1,0 +1,131 @@
+name: AI CD
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: '배포할 AI 서비스 선택'
+        required: true
+        type: choice
+        options:
+          - ai-kellyn
+          - ai-mac
+      env:
+        description: '실행 환경 (DockerHub 태그 및 컨테이너 ENV 값)'
+        required: true
+        type: choice
+        options:
+          - develop
+          - prod
+
+jobs:
+  deploy:
+    name: AI GPU 서비스 배포
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+
+    steps:
+      - name: SSH 키 설정
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.AI_SSH_PRIVATE_KEY }}
+
+      - name: DockerHub 이미지 pull 및 실행
+        id: deploy-step
+        run: |
+          set -e
+          SERVICE="${{ github.event.inputs.service }}"
+          ENV="${{ github.event.inputs.env }}"
+
+          # 서비스별 VPC 서버 분기
+          if [ "$SERVICE" = "ai-kellyn" ]; then
+            HOST="${{ secrets.AI_KELLYN_HOST }}"  # VPC-GPU2
+            PORT=8000
+          elif [ "$SERVICE" = "ai-mac" ]; then
+            HOST="${{ secrets.AI_MAC_HOST }}"     # VPC-GPU1
+            PORT=8001
+          else
+            echo "❌ 알 수 없는 서비스: $SERVICE"
+            exit 1
+          fi
+
+          IMAGE_TAG="${SERVICE}:${ENV}"
+          FULL_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_TAG"
+
+          echo "서비스: $SERVICE"
+          echo "환경: $ENV"
+          echo "서버: $HOST"
+          echo "이미지: $FULL_IMAGE"
+          echo "포트: $PORT"
+
+          ssh $HOST << EOF
+            set -e
+
+            echo "DockerHub 이미지 pull"
+            docker pull $FULL_IMAGE
+
+            echo "기존 컨테이너 중지 및 제거"
+            docker stop $SERVICE || true
+            docker rm $SERVICE || true
+
+            echo "새 GPU 컨테이너 실행"
+            docker run -d --name $SERVICE -p $PORT:8000 \
+              -e ENV=$ENV \
+              --gpus all \
+              --restart always \
+              $FULL_IMAGE
+
+            echo "헬스체크 시작 (최대 60초 대기)"
+            for i in {1..60}; do
+              STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$PORT)
+              if [ "\$STATUS" = "200" ]; then
+                echo "✅ 헬스체크 성공 (HTTP 200)"
+                break
+              fi
+              echo "대기 중 (\$i/60)"
+              sleep 1
+            done
+
+            if [ "\$STATUS" != "200" ]; then
+              echo "❌ 헬스체크 실패 — 컨테이너 롤백"
+              docker stop $SERVICE || true
+              docker rm $SERVICE || true
+              exit 1
+            fi
+          EOF
+
+      - name: 상태 기록 - 성공
+        id: set-status
+        if: success()
+        run: echo "status=success" >> "$GITHUB_OUTPUT"
+
+      - name: 상태 기록 - 실패
+        if: failure()
+        id: set-status
+        run: echo "status=failure" >> "$GITHUB_OUTPUT"
+
+  notify:
+    name: Discord 알림
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+
+    steps:
+      - name: 디스코드 알림 전송
+        run: |
+          STATUS="${{ needs.deploy.outputs.status }}"
+          SERVICE="${{ github.event.inputs.service }}"
+          ENV="${{ github.event.inputs.env }}"
+
+          if [ "$STATUS" = "success" ]; then
+            MESSAGE="✅ \`[AI $SERVICE - $ENV]\` 배포 완료! GPU 서버에서 컨테이너 실행 성공"
+          elif [ "$STATUS" = "failure" ]; then
+            MESSAGE="🚨 \`[AI $SERVICE - $ENV]\` 배포 실패! 이미지 pull 또는 실행 중 오류"
+          else
+            MESSAGE="⚠️ \`[AI $SERVICE - $ENV]\` 배포 상태: $STATUS"
+          fi
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
