@@ -134,7 +134,7 @@ resource "google_compute_instance" "db_instance" {
     subnetwork = var.db_subnet_self_link
   }
 
-  metadata_startup_script = templatefile("${path.module}/startup/db_startup.sh.tpl", {
+  metadata_startup_script = templatefile("${path.module}/db_startup.sh.tpl", {
     mysql_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
     redis_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
     mysql_root_password = "Rlatldms!2!3"
