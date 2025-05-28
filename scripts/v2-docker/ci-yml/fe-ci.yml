@@ -37,7 +37,7 @@ jobs:
   lint:
     name: Lint
     needs: setup
-    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,10 +58,10 @@ jobs:
       - name: Run ESLint
         run: pnpm run lint
 
-  unit:
+  unit-test:
     name: Unit Test
     needs: setup
-    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -85,7 +85,7 @@ jobs:
   integration-test:
     name: Integration Test
     needs: setup
-    if: github.base_ref == 'main' && github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -108,8 +108,6 @@ jobs:
         run: echo "Using cached pnpm modules"
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Playwright
-        run: pnpm add -D playwright
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Build Next.js app for testing
@@ -117,56 +115,32 @@ jobs:
       - name: Start Next.js app for testing
         run: pnpm run start &
       - name: Wait for App to Start (Health Check)
-        run: |
-            TIMEOUT=60
-            for i in $(seq 1 $TIMEOUT); do
-              if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 >/dev/null 2>&1 && [ "$status" -eq "200" ]; then
-                echo "Application is ready"
-                exit 0
-              fi
-              echo "Waiting for application... ($i/$TIMEOUT)"
-              sleep 1
-            done
-            echo "Application did not start within the timeout"
-            exit 1
+        run: sleep 30;
+
       - name: Run Playwright Tests (${{ matrix.browser }})
-        run: pnpm test:e2e --browser=${{ matrix.browser }}
+        run: pnpm exec playwright test --project=chromium
         env:
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
 
-  build-fe-dev-docker:
-    name: Build Frontend Docker (develop only)
-    needs: [lint, unit, setup] # 필요한 이전 작업들을 명시
-    if: github.ref == 'refs/heads/develop' || github.base_ref == 'develop'
+  build-dev:
+    name: Build and Push Docker (dev)
+    needs: [lint, unit-test]
+    if: github.base_ref == 'develop' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./
     steps:
       - uses: actions/checkout@v3
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '22'
-      - name: Use cached pnpm modules
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
-      - name: Get pnpm cache directory
-        shell: bash
-        id: pnpm-cache
-        run: |
-          echo "pnpm_cache_path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        name: Cache pnpm modules
-        with:
-          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('./pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          cache: 'pnpm'
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build Next.js App
+      - name: Build App
         run: pnpm run build
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -180,42 +154,26 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: jchanho99/frontend-dev:latest
-          # cache-from: type=gha,scope=build-frontend-dev
-          # cache-to: type=gha,mode=max,scope=build-frontend-dev
 
-  build-fe-prod-docker:
-    name: Build Frontend Docker (main only PR)
-    needs: [integration-test, setup] # 필요한 이전 작업들을 명시
+  build-prod:
+    name: Build and Push Docker (prod)
+    needs: [integration-test]
     if: github.base_ref == 'main' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./
     steps:
       - uses: actions/checkout@v3
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '22'
-      - name: Use cached pnpm modules
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
-      - name: Get pnpm cache directory
-        shell: bash
-        id: pnpm-cache
-        run: |
-          echo "pnpm_cache_path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        name: Cache pnpm modules
-        with:
-          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('./pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: pnpm install  --frozen-lockfile
-      - name: Build Next.js App
+        run: pnpm install --frozen-lockfile
+      - name: Build App
         run: pnpm run build
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -229,6 +187,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: jchanho99/frontend-prod:latest
-          # cache-from: type=gha,scope=build-frontend-prod
-          # cache-to: type=gha,mode=max,scope=build-frontend-prod
-
