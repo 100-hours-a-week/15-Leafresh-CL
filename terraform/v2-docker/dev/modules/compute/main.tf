@@ -4,7 +4,7 @@
 resource "google_compute_instance" "nextjs_instance" {
   project      = var.project_id
   name         = "leafresh-gce-fe"
-  machine_type = "e2-medium"
+  machine_type = "e2-custom-1-3072"
   zone         = var.zone
   tags         = [var.nextjs_tag]
 
@@ -63,7 +63,7 @@ EOF
 resource "google_compute_instance" "springboot_instance" {
   project      = var.project_id
   name         = "leafresh-gce-be"
-  machine_type = "e2-medium"
+  machine_type = "e2-custom-1-3072"
   zone         = var.zone
   tags         = [var.springboot_tag]
 
@@ -119,7 +119,7 @@ EOF
 resource "google_compute_instance" "db_instance" {
   project      = var.project_id
   name         = "leafresh-gce-db"
-  machine_type = "e2-medium"
+  machine_type = "e2-custom-1-3072"
   zone         = var.zone
   tags         = [var.db_tag]
 
