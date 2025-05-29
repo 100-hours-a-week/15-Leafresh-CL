@@ -101,10 +101,17 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 # Docker 사용자 그룹에 현재 사용자 추가 (선택 사항, 필요 시)
 # sudo usermod -aG docker ubuntu 
 
+# Secret Manager에서 .env 가져오기
+gcloud secrets versions access latest --secret="leafresh-backend-env" > /etc/app/.env
+
+# 환경 변수 적용
+export $(cat /etc/app/.env | xargs)
+
 # Docker Hub에서 이미지 다운로드 및 실행
 sudo docker run -d \
   --name springboot-backend \
   -p 8080:8080 \
+  -env-file .env \
   jchanho99/backend-dev:latest
 EOF
 
@@ -135,12 +142,12 @@ resource "google_compute_instance" "db_instance" {
   }
 
   metadata_startup_script = templatefile("${path.module}/db_startup.sh.tpl", {
-    mysql_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
-    redis_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
+    # mysql_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
+    # redis_bind_ip  = google_compute_instance.db_instance.network_interface[0].network_ip
     mysql_root_password = "Rlatldms!2!3"
     mysql_database      = "leafresh"
-    mysql_user          = "root"
-    mysql_user_password = "Rlatldms!2!3"
+    # mysql_user          = "root"
+    # mysql_user_password = "Rlatldms!2!3"
     redis_port          = "6379"
     redis_host          = "localhost"
   })

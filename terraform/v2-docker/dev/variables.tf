@@ -72,23 +72,23 @@ variable "db_tag" {
   default     = "db-instance"
 }
 
-variable "db_user" {
-  description = "MySQL db 사용자 이름"
-  type        = string
-  sensitive   = true
-}
+# variable "db_user" {
+#   description = "MySQL db 사용자 이름"
+#   type        = string
+#   sensitive   = true
+# }
  
-variable "db_user_password" {
-  description = "MySQL db 사용자 비밀번호"
-  type        = string
-  sensitive   = true
-}
+# variable "db_user_password" {
+#   description = "MySQL db 사용자 비밀번호"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "mysql_root_password" {
-  description = "MySQL root 비밀번호"
-  type        = string
-  sensitive   = true
-}
+# variable "mysql_root_password" {
+#   description = "MySQL root 비밀번호"
+#   type        = string
+#   sensitive   = true
+# }
 
 variable "gpu1_instance_vpc_name" {
   description = "기존 GPU1 instance VPC의 이름"

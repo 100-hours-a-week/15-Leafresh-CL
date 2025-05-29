@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# 내부 IP 가져오기
+INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
+  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
+
 # 방화벽 설정
 sudo ufw allow 3306/tcp
 sudo ufw allow ${redis_port}/tcp
@@ -22,26 +26,18 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 cat << ENV > /home/ubuntu/.env
 MYSQL_ROOT_PASSWORD=${mysql_root_password}
 MYSQL_DATABASE=${mysql_database}
-MYSQL_USER=${mysql_user}
-MYSQL_PASSWORD=${mysql_user_password}
 docker_local_cache_host=${redis_host}
 docker_local_cache_port=${redis_port}
 ENV
 
-# custom.cnf (MySQL) 생성
+# MySQL 설정 생성
 sudo mkdir -p /home/ubuntu/mysql-conf
 cat << CNF > /home/ubuntu/mysql-conf/custom.cnf
 [mysqld]
-bind-address = ${mysql_bind_ip}
+bind-address = 0.0.0.0
 CNF
 
-# redis.conf 생성
-sudo mkdir -p /home/ubuntu/redis-conf
-cat << RCNF > /home/ubuntu/redis-conf/redis.conf
-bind ${redis_bind_ip}
-port ${redis_port}
-protected-mode yes
-RCNF
+# RedisBloom은 이미지 자체에 모듈 포함되어 있음
 
 # docker-compose.yml 생성
 cat << COMPOSE > /home/ubuntu/docker-compose.yml
@@ -63,7 +59,7 @@ services:
       - internal_network
 
   redis:
-    image: redis:7.2-alpine
+    image: redislabs/rebloom:2.8.1
     container_name: leafresh-redis
     restart: always
     ports:
@@ -71,8 +67,6 @@ services:
       - "8001:8001"
     volumes:
       - redis_data:/data
-      - /home/ubuntu/redis-conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     networks:
       - internal_network
 
@@ -87,3 +81,4 @@ COMPOSE
 
 # Docker Compose 실행
 sudo docker compose -f /home/ubuntu/docker-compose.yml up -d
+

@@ -39,9 +39,9 @@ module "compute" {
   gcs_bucket_name             = var.gcs_bucket_name
   cloud_dns_zone_name         = var.cloud_dns_zone_name
   cloud_dns_record_name       = var.cloud_dns_record_name
-  mysql_root_password         = var.mysql_root_password
-  db_user                     = var.db_user
-  db_user_password            = var.db_user_password
+  # mysql_root_password         = var.mysql_root_password
+  # db_user                     = var.db_user
+  # db_user_password            = var.db_user_password
 }
 
 # Pub/Sub 모듈 호출

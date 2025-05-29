@@ -45,28 +45,28 @@ variable "db_tag" {
   type        = string
 }
 
-variable "mysql_root_password" {
-  description = "MySQL root 비밀번호"
-  type        = string
-  sensitive   = true
-}
+# variable "mysql_root_password" {
+#   description = "MySQL root 비밀번호"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "db_user" {
-  description = "MySQL db 사용자 이름"
-  type        = string
-  sensitive   = true
-}
+# variable "db_user" {
+#   description = "MySQL db 사용자 이름"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "db_user_password" {
-  description = "MySQL db 사용자 비밀번호"
-  type        = string
-  sensitive   = true
-}
+# variable "db_user_password" {
+#   description = "MySQL db 사용자 비밀번호"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "mysql_database" {
-  description = "MySQL 초기 DB 이름"
-  default     = "leafresh"
-}
+# variable "mysql_database" {
+#   description = "MySQL 초기 DB 이름"
+#   default     = "leafresh"
+# }
 
 variable "gcs_bucket_name" {
   description = "Spring Boot와 연결할 GCS 버킷명"
