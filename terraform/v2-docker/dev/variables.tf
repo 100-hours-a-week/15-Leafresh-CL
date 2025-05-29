@@ -27,13 +27,11 @@ variable "project_number" {
 variable "region" {
   description = "GCP 리전"
   type        = string
-  default     = "asia-northeast3"
 }
 
 variable "zone" {
   description = "GCP 존"
   type        = string
-  default     = "asia-northeast3-a"
 }
 
 
@@ -43,49 +41,41 @@ variable "zone" {
 variable "vpc_cidr_block" {
   description = "VPC의 CIDR 블록"
   type        = string
-  default     = "10.0.1.0/22"
 }
 
 variable "subnet_cidr_fe" {
   description = "Next.js Public Subnet의 CIDR 블록"
   type        = string
-  default     = "10.0.1.0/26"
 }
 
 variable "subnet_cidr_be" {
   description = "Spring Boot Private Subnet의 CIDR 블록"
   type        = string
-  default     = "10.0.1.64/26"
 }
 
 variable "subnet_cidr_db" {
   description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
   type        = string
-  default     = "10.0.1.128/26"
 }
 
 variable "vpc_name_gpu1" {
   description = "기존 GPU1 instance VPC의 이름"
   type        = string
-  default     = "leafresh-vpc"
 }
 
 variable "vpc_name_gpu2" {
   description = "기존 GPU2 instance VPC의 이름"
   type        = string
-  default     = "leafresh-vpc-gpu2"
 }
 
 variable "vpc_cidr_block_gpu1" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
   type        = string
-  default     = "10.0.3.0/24"
 }
 
 variable "vpc_cidr_block_gpu2" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
   type        = string
-  default     = "10.0.4.0/24"
 }
 
 

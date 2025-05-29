@@ -1,5 +1,37 @@
 # modules/compute/main.tf
 
+# 템플릿 로컬 적용
+locals {
+  docker_compose = templatefile("${path.module}/nginx/docker-compose.tpl", {
+    domain = var.dns_record_name
+  })
+
+  nginx_conf = templatefile("${path.module}/nginx/default.conf.tpl", {
+    domain = var.dns_record_name
+  })
+
+  fe_startup_script = templatefile("${path.module}/fe_startup.sh.tpl", {
+    domain           = var.dns_record_name
+    docker_compose   = local.docker_compose
+    nginx_conf       = local.nginx_conf
+  })
+
+  be_startup_script = templatefile("${path.module}/be_startup.sh.tpl", {
+    port           = 8080
+    secret_name    = "env-be-local"
+    container_name = "springboot-backend"
+    image          = "jchanho99/backend-dev:latest"
+  })
+
+  db_startup_script = templatefile("${path.module}/db_startup.sh.tpl", {
+    mysql_root_password = "Rlatldms!2!3"
+    mysql_database      = "leafresh"
+    redis_port          = "6379"
+    redis_host          = "localhost"
+  })
+}
+
+
 # Next.js GCE 인스턴스
 resource "google_compute_instance" "fe_instance" {
   project      = var.project_id_dev
@@ -23,36 +55,7 @@ resource "google_compute_instance" "fe_instance" {
     }
   }
 
-  metadata_startup_script = <<-EOF
-#!/bin/bash
-
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 3000/tcp
-sudo ufw allow 22/tcp
-echo "y" | sudo ufw enable
-
-# Docker 설치
-sudo apt update
-sudo apt install -y ca-certificates curl gnupg lsb-release
-sudo mkdir -m 0755 -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-# Docker 사용자 그룹에 현재 사용자 추가 (선택 사항, 필요 시)
-# sudo usermod -aG docker ubuntu 
-
-sudo docker run -d \
-  --name nextjs-frontend \
-  -p 80:3000 \
-  -p 443:3000 \
-  -p 3000:3000 \
-  jchanho99/frontend-dev:latest
-EOF
+  metadata_startup_script = local.fe_startup_script
 
   service_account {
     scopes = ["cloud-platform"] # 전체 권한 부여 기능, 수정 필요 
@@ -83,46 +86,10 @@ resource "google_compute_instance" "be_instance" {
     }
   }
 
-
-  metadata_startup_script = <<-EOF
-#!/bin/bash
-
-sudo ufw allow 8080/tcp
-sudo ufw allow 22/tcp
-echo "y" | sudo ufw enable
-
-# Docker 설치
-sudo apt update
-sudo apt install -y ca-certificates curl gnupg lsb-release
-sudo mkdir -m 0755 -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-# Docker 사용자 그룹에 현재 사용자 추가 (선택 사항, 필요 시)
-# sudo usermod -aG docker ubuntu 
-
-# Secret Manager에서 .env 가져오기
-gcloud secrets versions access latest --secret="=env-be-local" > /etc/app/.env
-
-# 환경 변수 적용
-export $(cat /etc/app/.env | xargs)
-
-# Docker Hub에서 이미지 다운로드 및 실행
-sudo docker run -d \
-  --name springboot-backend \
-  -p 8080:8080 \
-  -env-file .env \
-  jchanho99/backend-dev:latest
-EOF
+  metadata_startup_script = local.fe_startup_script
 
   service_account {
-    scopes = [
-      "cloud-platform"
-    ]
+    scopes = ["cloud-platform"]
   }
 }
 
@@ -146,12 +113,7 @@ resource "google_compute_instance" "db_instance" {
     network_ip = var.static_internal_ip_db
   }
 
-  metadata_startup_script = templatefile("${path.module}/db_startup.sh.tpl", {
-    mysql_root_password = "Rlatldms!2!3"
-    mysql_database      = "leafresh"
-    redis_port          = "6379"
-    redis_host          = "localhost"
-  })
+  metadata_startup_script = local.db_startup_script
 
   service_account {
     scopes = ["cloud-platform"]
