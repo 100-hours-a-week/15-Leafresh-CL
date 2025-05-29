@@ -1,69 +1,112 @@
-# 방화벽 모듈 호출
+# VPC 모듈
+module "vpc" {
+  source       = "./modules/vpc"
+  project_id   = var.project_id_dev
+  project_name = var.project_name_dev
+}
+
+# 방화벽 모듈
 module "firewall" {
-  source                        = "./modules/firewall"
-  project_id                    = var.project_id
-  network_name                  = module.network.vpc_name
-  nextjs_tag                    = var.nextjs_tag
-  springboot_tag                = var.springboot_tag
-  db_tag                        = var.db_tag
-  gpu1_instance_vpc_name        = var.gpu1_instance_vpc_name
-  gpu1_instance_vpc_cidr_block = var.gpu1_instance_vpc_cidr_block
-  gpu2_instance_vpc_name        = var.gpu2_instance_vpc_name
-  gpu2_instance_vpc_cidr_block = var.gpu2_instance_vpc_cidr_block
+  source         = "./modules/firewall"
+  project_id_dev = var.project_id_dev
+  vpc_name       = module.vpc.vpc_name
+
+  tag_fe = var.tag_fe
+  tag_be = var.tag_be
+  tag_db = var.tag_db
+
+  # vpc_name_gpu1        = var.vpc_name_gpu1
+  vpc_cidr_block_gpu1 = var.vpc_cidr_block_gpu1
+  # vpc_name_gpu2        = var.vpc_name_gpu2
+  vpc_cidr_block_gpu2 = var.vpc_cidr_block_gpu2
 }
-# 네트워크 모듈 호출
+
+# 네트워크 모듈
 module "network" {
-  source                 = "./modules/network"
-  project_id             = var.project_id
-  project_id_gpu1        = var.project_id_gpu1
-  project_id_gpu2        = var.project_id_gpu2
-  region                 = var.region
-  vpc_cidr_block         = var.vpc_cidr_block
-  nextjs_subnet_cidr     = var.nextjs_subnet_cidr
-  springboot_subnet_cidr = var.springboot_subnet_cidr
-  db_subnet_cidr         = var.db_subnet_cidr
+  source            = "./modules/network"
+  region            = var.region
+  project_id_dev    = var.project_id_dev
+  project_id_gpu1   = var.project_id_gpu1
+  project_id_gpu2   = var.project_id_gpu2
+  vpc_name_dev  = module.vpc.vpc_name
+  vpc_name_gpu1 = var.vpc_name_gpu1
+  vpc_name_gpu2 = var.vpc_name_gpu2
+
+  nat_ip      = var.nat_ip
+  nat_router  = var.nat_router
+  nat_gateway = var.nat_gateway
+
+  static_ip_name_fe = var.static_ip_name_fe
+  static_ip_name_be = var.static_ip_name_be
+
+  subnet_name_fe = var.subnet_name_fe
+  subnet_name_be = var.subnet_name_be
+  subnet_name_db = var.subnet_name_db
+
+  # vpc_cidr_block         = var.vpc_cidr_block
+
+  subnet_cidr_fe = var.subnet_cidr_fe
+  subnet_cidr_be = var.subnet_cidr_be
+  subnet_cidr_db = var.subnet_cidr_db
+
+  vpc_self_link = module.vpc.vpc_self_link
 }
 
-# Compute 모듈 호출
+# VM 모듈
 module "compute" {
-  source                      = "./modules/compute"
-  project_id                  = var.project_id
+  zone   = var.zone
+  source = "./modules/compute"
   region                      = var.region
-  zone                        = var.zone
-  nextjs_subnet_self_link     = module.network.nextjs_subnet_self_link
-  springboot_subnet_self_link = module.network.springboot_subnet_self_link
-  db_subnet_self_link         = module.network.db_subnet_self_link
-  nextjs_tag                  = var.nextjs_tag
-  springboot_tag              = var.springboot_tag
-  db_tag                      = var.db_tag
-  gcs_bucket_name             = var.gcs_bucket_name
-  cloud_dns_zone_name         = var.cloud_dns_zone_name
-  cloud_dns_record_name       = var.cloud_dns_record_name
-  # mysql_root_password         = var.mysql_root_password
-  # db_user                     = var.db_user
-  # db_user_password            = var.db_user_password
+  project_id_dev = var.project_id_dev
+
+  static_ip_fe = module.network.static_ip_fe
+  static_ip_be = module.network.static_ip_be
+
+
+  static_internal_ip_fe = var.static_internal_ip_fe
+  static_internal_ip_be = var.static_internal_ip_be
+  static_internal_ip_db = var.static_internal_ip_db
+
+  subnet_fe_self_link = module.network.subnet_fe_self_link
+  subnet_be_self_link = module.network.subnet_be_self_link
+  subnet_db_self_link = module.network.subnet_db_self_link
+
+  tag_fe = var.tag_fe
+  tag_be = var.tag_be
+  tag_db = var.tag_db
+
+  gce_name_fe = var.gce_name_fe
+  gce_name_be = var.gce_name_be
+  gce_name_db = var.gce_name_db
+
+  gce_machine_type_fe = var.gce_machine_type_fe
+  gce_machine_type_be = var.gce_machine_type_be
+  gce_machine_type_db = var.gce_machine_type_db
+
+  gce_image = var.gce_image
+
+  gce_disk_size = var.gce_disk_size
+
+  dns_zone_name   = var.dns_zone_name
+  dns_record_name = var.dns_record_name
 }
 
-# Pub/Sub 모듈 호출
+# Pub/Sub 모듈
 module "pubsub" {
-  source     = "./modules/pubsub"
-  project_id = var.project_id
+  source         = "./modules/pubsub"
+  project_id_dev = var.project_id_dev
   project_number = var.project_number
+
+  pubsub_topic_name        = var.pubsub_topic_name
+  pubsub_subscription_name = var.pubsub_subscription_name
 }
 
-# IAP 터널링을 허용할 사용자에게 IAM 역할 부여 (예: 자신의 GCP 사용자 계정)
-# 이메일 주소를 자신의 GCP 계정 이메일로 변경하세요.
-resource "google_project_iam_member" "iap_tunnel_user" {
-  project = var.project_id
-  role    = "roles/iap.tunnelResourceAccessor"
-  member  = "user:${var.iap_user_email}" # <<-- 자신의 GCP 이메일 주소로 변경
-}
 
-# SSH를 통해 IAP 터널링을 할 경우 GCE Instance Connect API를 사용하므로 해당 권한도 필요
-resource "google_project_iam_member" "gce_instance_connect_user" {
-  project = var.project_id
-  role    = "roles/compute.instanceAdmin.v1" # 또는 roles/compute.instanceAdmin 같은 덜 강력한 역할
-  member  = "user:${var.iap_user_email}" # <<-- 자신의 GCP 이메일 주소로 변경
-}
+# IAM 모듈
+module "iam" {
+  source         = "./modules/iam"
+  project_id_dev = var.project_id_dev
 
+  iam_bindings = var.iam_bindings
+}
 

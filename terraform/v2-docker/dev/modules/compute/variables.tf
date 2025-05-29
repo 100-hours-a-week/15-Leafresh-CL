@@ -1,6 +1,6 @@
 # modules/compute/variables.tf
 
-variable "project_id" {
+variable "project_id_dev" {
   description = "GCP 프로젝트 ID"
   type        = string
 }
@@ -15,70 +15,108 @@ variable "zone" {
   type        = string
 }
 
-variable "nextjs_subnet_self_link" {
+variable "static_ip_fe" {
+  description = "FE 외부 IP 이름"
+  type        = string
+}
+
+variable "static_ip_be" {
+  description = "BE 외부 IP 이름"
+  type        = string
+}
+
+
+variable "static_internal_ip_fe" {
+  description = "Next.js 인스턴스의 내부 IP"
+  type        = string
+}
+
+variable "static_internal_ip_be" {
+  description = "Spring Boot 인스턴스의 내부 IP"
+  type        = string
+}
+
+variable "static_internal_ip_db" {
+  description = "DB 인스턴스의 내부 IP"
+  type        = string
+}
+
+variable "subnet_fe_self_link" {
   description = "Next.js Public Subnet의 Self Link"
   type        = string
 }
 
-variable "springboot_subnet_self_link" {
+variable "subnet_be_self_link" {
   description = "Spring Boot Private Subnet의 Self Link"
   type        = string
 }
 
-variable "db_subnet_self_link" {
+variable "subnet_db_self_link" {
   description = "MySQL 및 Redis Private Subnet의 Self Link"
   type        = string
 }
 
-variable "nextjs_tag" {
+variable "tag_fe" {
   description = "Next.js 인스턴스에 적용할 네트워크 태그"
   type        = string
 }
 
-variable "springboot_tag" {
+variable "tag_be" {
   description = "Spring Boot 인스턴스에 적용할 네트워크 태그"
   type        = string
 }
 
-variable "db_tag" {
+variable "tag_db" {
   description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
   type        = string
 }
 
-# variable "mysql_root_password" {
-#   description = "MySQL root 비밀번호"
-#   type        = string
-#   sensitive   = true
-# }
-
-# variable "db_user" {
-#   description = "MySQL db 사용자 이름"
-#   type        = string
-#   sensitive   = true
-# }
-
-# variable "db_user_password" {
-#   description = "MySQL db 사용자 비밀번호"
-#   type        = string
-#   sensitive   = true
-# }
-
-# variable "mysql_database" {
-#   description = "MySQL 초기 DB 이름"
-#   default     = "leafresh"
-# }
-
-variable "gcs_bucket_name" {
-  description = "Spring Boot와 연결할 GCS 버킷명"
+variable "gce_name_fe" {
+  description = "fe 인스턴스 이름"
   type        = string
 }
 
-variable "cloud_dns_zone_name" {
+variable "gce_name_be" {
+  description = "be 인스턴스 이름"
+  type        = string
+}
+
+variable "gce_name_db" {
+  description = "db 인스턴스 이름"
+  type        = string
+}
+
+variable "dns_zone_name" {
   description = "기존 Cloud DNS Zone의 이름"
   type        = string
 }
 
-variable "cloud_dns_record_name" {
+variable "dns_record_name" {
   description = "Cloud DNS에서 생성할 A 레코드의 이름"
+  type        = string
+}
+
+variable "gce_machine_type_fe" {
+  description = "GCE FE용 VM 타입"
+  type        = string
+}
+
+variable "gce_machine_type_be" {
+  description = "GCE BE용 VM 타입"
+  type        = string
+}
+
+variable "gce_machine_type_db" {
+  description = "GCE BE용 VM 타입"
+  type        = string
+}
+
+variable "gce_image" {
+  description = "GCE VM 이미지"
+  type        = string
+}
+
+variable "gce_disk_size" {
+  description = "GCE VM 디스크 크기"
   type        = string
 }

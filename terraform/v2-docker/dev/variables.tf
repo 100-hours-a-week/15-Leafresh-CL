@@ -1,4 +1,5 @@
-variable "project_id" {
+# project 공통 변수
+variable "project_id_dev" {
   description = "GCP 프로젝트 ID"
   type        = string
 }
@@ -13,6 +14,11 @@ variable "project_id_gpu2" {
   type        = string
 }
 
+variable "project_name_dev" {
+  description = "GCP 프로젝트 이름"
+  type        = string
+}
+
 variable "project_number" {
   description = "GCP 프로젝트 번호"
   type        = string
@@ -21,7 +27,7 @@ variable "project_number" {
 variable "region" {
   description = "GCP 리전"
   type        = string
-  default     = "asia-northeast3" # 서울 리전
+  default     = "asia-northeast3"
 }
 
 variable "zone" {
@@ -30,114 +36,205 @@ variable "zone" {
   default     = "asia-northeast3-a"
 }
 
+
+
+
+# firewall 변수
 variable "vpc_cidr_block" {
   description = "VPC의 CIDR 블록"
   type        = string
   default     = "10.0.1.0/22"
 }
 
-variable "nextjs_subnet_cidr" {
+variable "subnet_cidr_fe" {
   description = "Next.js Public Subnet의 CIDR 블록"
   type        = string
   default     = "10.0.1.0/26"
 }
 
-variable "springboot_subnet_cidr" {
+variable "subnet_cidr_be" {
   description = "Spring Boot Private Subnet의 CIDR 블록"
   type        = string
   default     = "10.0.1.64/26"
 }
 
-variable "db_subnet_cidr" {
+variable "subnet_cidr_db" {
   description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
   type        = string
   default     = "10.0.1.128/26"
 }
 
-variable "nextjs_tag" {
-  description = "Next.js 인스턴스에 적용할 네트워크 태그"
-  type        = string
-  default     = "nextjs-instance"
-}
-
-variable "springboot_tag" {
-  description = "Spring Boot 인스턴스에 적용할 네트워크 태그"
-  type        = string
-  default     = "springboot-instance"
-}
-
-variable "db_tag" {
-  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
-  type        = string
-  default     = "db-instance"
-}
-
-# variable "db_user" {
-#   description = "MySQL db 사용자 이름"
-#   type        = string
-#   sensitive   = true
-# }
- 
-# variable "db_user_password" {
-#   description = "MySQL db 사용자 비밀번호"
-#   type        = string
-#   sensitive   = true
-# }
-
-# variable "mysql_root_password" {
-#   description = "MySQL root 비밀번호"
-#   type        = string
-#   sensitive   = true
-# }
-
-variable "gpu1_instance_vpc_name" {
+variable "vpc_name_gpu1" {
   description = "기존 GPU1 instance VPC의 이름"
   type        = string
-  default     = "leafresh-vpc" # 실제 GPU VPC 이름으로 변경 필요
+  default     = "leafresh-vpc"
 }
 
-variable "gpu2_instance_vpc_name" {
+variable "vpc_name_gpu2" {
   description = "기존 GPU2 instance VPC의 이름"
   type        = string
-  default     = "leafresh-vpc-gpu2" # 실제 GPU VPC 이름으로 변경 필요
+  default     = "leafresh-vpc-gpu2"
 }
 
-variable "gpu1_instance_vpc_cidr_block" {
+variable "vpc_cidr_block_gpu1" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
   type        = string
   default     = "10.0.3.0/24"
 }
 
-variable "gpu2_instance_vpc_cidr_block" {
+variable "vpc_cidr_block_gpu2" {
   description = "기존 GPU instance VPC의 CIDR 블록 리스트"
   type        = string
   default     = "10.0.4.0/24"
 }
 
-variable "gcs_bucket_name" {
-  description = "Spring Boot와 연결할 GCS 버킷명"
+
+
+
+# network 변수
+variable "subnet_name_fe" {
+  description = "FE 서브넷 이름"
   type        = string
-  default     = "leafresh-images"
 }
 
-variable "cloud_dns_zone_name" {
+variable "subnet_name_be" {
+  description = "BE 서브넷 이름"
+  type        = string
+}
+
+variable "subnet_name_db" {
+  description = "DB 서브넷 이름"
+  type        = string
+}
+
+variable "nat_ip" {
+  description = "NAT IP 주소"
+  type        = string
+}
+
+variable "nat_router" {
+  description = "NAT 라우터 이름"
+  type        = string
+}
+
+variable "nat_gateway" {
+  description = "NAT 게이트웨이 이름"
+  type        = string
+}
+
+variable "static_ip_name_fe" {
+  description = "NAT IP 주소"
+  type        = string
+}
+
+variable "static_ip_name_be" {
+  description = "NAT IP 주소"
+  type        = string
+}
+
+
+# compute 변수
+variable "static_internal_ip_fe" {
+  description = "Next.js 인스턴스의 내부 IP"
+  type        = string
+}
+
+variable "static_internal_ip_be" {
+  description = "Spring Boot 인스턴스의 내부 IP"
+  type        = string
+}
+
+variable "static_internal_ip_db" {
+  description = "DB 인스턴스의 내부 IP"
+  type        = string
+}
+
+variable "tag_fe" {
+  description = "Next.js 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
+
+variable "tag_be" {
+  description = "Spring Boot 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
+
+variable "tag_db" {
+  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
+
+variable "gce_name_fe" {
+  description = "fe 인스턴스 이름"
+  type        = string
+}
+
+variable "gce_name_be" {
+  description = "be 인스턴스 이름"
+  type        = string
+}
+
+variable "gce_name_db" {
+  description = "db 인스턴스 이름"
+  type        = string
+}
+
+variable "gce_machine_type_fe" {
+  description = "GCE FE용 VM 타입"
+  type        = string
+}
+
+variable "gce_machine_type_be" {
+  description = "GCE BE용 VM 타입"
+  type        = string
+}
+
+variable "gce_machine_type_db" {
+  description = "GCE BE용 VM 타입"
+  type        = string
+}
+
+variable "dns_zone_name" {
   description = "기존 Cloud DNS Zone의 이름"
   type        = string
-  default     = "dev-leafresh-app"
 }
 
-variable "cloud_dns_record_name" {
+variable "dns_record_name" {
   description = "Cloud DNS에서 생성할 A 레코드의 이름"
   type        = string
-  default     = "dev-leafresh.app"
 }
 
-variable "iap_user_email" {
-  description = "IAP 터널링 권한을 부여할 GCP 사용자 이메일 주소"
+variable "gce_image" {
+  description = "GCE VM 이미지"
   type        = string
 }
 
-variable "gce_service_account_email" {
-  description = "Pub/Sub Pull을 위한 GCE 서비스 계정 주소"
+variable "gce_disk_size" {
+  description = "GCE VM 디스크 크기"
   type        = string
 }
+
+
+
+# Pub/Sub 변수
+variable "pubsub_topic_name" {
+  description = "GCP 토픽 이름"
+  type        = string
+}
+
+variable "pubsub_subscription_name" {
+  description = "GCP 구독 이름"
+  type        = string
+}
+
+
+
+# iam 변수
+variable "iam_bindings" {
+  description = "IAM bindings to be applied"
+  type = list(object({
+    role   = string
+    member = string
+  }))
+}
+
