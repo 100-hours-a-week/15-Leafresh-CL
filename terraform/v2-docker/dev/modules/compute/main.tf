@@ -5,7 +5,7 @@ locals {
   docker_compose = templatefile("${path.module}/nginx/docker-compose.tpl", {
     image          = var.startup_fe_image
     container_name = var.startup_fe_container_name
-    port           = var_startup_fe_nextjs_port
+    port           = var.startup_fe_nextjs_port
   })
 
   nginx_conf = templatefile("${path.module}/nginx/default.conf.tpl", {

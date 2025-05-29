@@ -92,7 +92,7 @@ module "compute" {
 
   startup_fe_image = var.startup_fe_image
   startup_fe_container_name = var.startup_fe_container_name
-  startup_fe_springboot_port = var.startup_fe_springboot_port
+  startup_fe_nextjs_port = var.startup_fe_nextjs_port
   startup_be_image = var.startup_be_image
   startup_be_container_name = var.startup_be_container_name
   startup_be_secret_name = var.startup_be_secret_name
