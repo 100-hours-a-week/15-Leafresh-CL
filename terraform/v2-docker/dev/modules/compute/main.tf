@@ -102,7 +102,7 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 # sudo usermod -aG docker ubuntu 
 
 # Secret Manager에서 .env 가져오기
-gcloud secrets versions access latest --secret="leafresh-backend-env" > /etc/app/.env
+gcloud secrets versions access latest --secret="env-be-local" > /etc/app/.env
 
 # 환경 변수 적용
 export $(cat /etc/app/.env | xargs)
