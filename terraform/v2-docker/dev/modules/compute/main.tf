@@ -131,3 +131,14 @@ resource "google_dns_record_set" "nextjs_dns_record" {
   ttl          = 18000
   rrdatas      = [google_compute_instance.fe_instance.network_interface[0].access_config[0].nat_ip]
 }
+
+# Cloud DNS A 레코드 추가 (Spring Boot BE 인스턴스 외부 IP를 가리키도록)
+resource "google_dns_record_set" "springboot_dns_record" {
+  project      = "leafresh"
+  managed_zone = var.dns_zone_name
+  name         = "be.${var.dns_record_name}."  # 예: be.dev-leafresh.app..
+  type         = "A"
+  ttl          = 18000
+  rrdatas      = [google_compute_instance.be_instance.network_interface[0].access_config[0].nat_ip]
+}
+
