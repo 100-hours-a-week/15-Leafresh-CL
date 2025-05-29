@@ -240,7 +240,7 @@ jobs:
             echo "Using production .env"
           else
             echo "${{ secrets.DOCKER_LOCAL }}" > .env
-            echo "env-be-dev" > secret_name.txt
+            echo "env-be-loacl" > secret_name.txt
             echo "Using development .env"
           fi
         
