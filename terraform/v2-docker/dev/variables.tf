@@ -204,6 +204,62 @@ variable "gce_disk_size" {
   type        = string
 }
 
+variable "startup_fe_nextjs_port" {
+  description = "FE 인스턴스 포트 번호"
+  type        = string
+}
+
+variable "startup_fe_container_name" {
+  description = "FE 인스턴스 도커 컨테이너 이름 설정"
+  type        = string
+}
+
+variable "startup_fe_image" {
+  description = "FE 인스턴스 도커 사용 이미지 이름"
+  type        = string
+}
+
+variable "startup_be_springboot_port" {
+  description = "BE 인스턴스 env 이름"
+  type        = string
+}
+
+variable "startup_be_secret_name" {
+  description = "BE 인스턴스 env 이름"
+  type        = string
+  sensitive   = true
+}
+
+variable "startup_be_container_name" {
+  description = "BE 인스턴스 도커 컨테이너 이름 설정"
+  type        = string
+}
+
+variable "startup_be_image" {
+  description = "BE 인스턴스 도커 사용 이미지 이름"
+  type        = string
+}
+
+variable "startup_db_mysql_root_password" {
+  description = "DB 인스턴스 루트 계정 비밀번호"
+  type        = string
+}
+
+variable "startup_db_mysql_database_name" {
+  description = "DB 인스턴스 데이터베이스 이름"
+  type        = string
+}
+
+variable "startup_db_redis_port" {
+  description = "DB 인스턴스 redis 포트 번호"
+  type        = string
+}
+
+variable "startup_db_redis_host" {
+  description = "DB 인스턴스 redis 호스트 이름"
+  type        = string
+}
+
 
 
 # Pub/Sub 변수

@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  frontend:
-    image: jchanho99/frontend-dev:latest
-    container_name: nextjs
+  app:
+    image: ${image}
+    container_name: ${container_name}
     restart: always
     expose:
-      - "3000"
+      - "${port}"
 
   nginx:
     image: nginx:alpine
@@ -19,4 +19,5 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - frontend
+      - ${container_name}
+

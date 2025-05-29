@@ -89,6 +89,18 @@ module "compute" {
 
   dns_zone_name   = var.dns_zone_name
   dns_record_name = var.dns_record_name
+
+  startup_fe_image = var.startup_fe_image
+  startup_fe_container_name = var.startup_fe_container_name
+  startup_fe_springboot_port = var.startup_fe_springboot_port
+  startup_be_image = var.startup_be_image
+  startup_be_container_name = var.startup_be_container_name
+  startup_be_secret_name = var.startup_be_secret_name
+  startup_be_springboot_port = var.startup_be_springboot_port
+  startup_db_mysql_database_name = var.startup_db_mysql_database_name
+  startup_db_mysql_root_password = var.startup_db_mysql_root_password
+  startup_db_redis_host = var.startup_db_redis_host
+  startup_db_redis_port = var.startup_db_redis_port
 }
 
 # Pub/Sub 모듈

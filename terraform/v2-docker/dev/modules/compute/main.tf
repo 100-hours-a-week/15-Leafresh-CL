@@ -3,7 +3,9 @@
 # 템플릿 로컬 적용
 locals {
   docker_compose = templatefile("${path.module}/nginx/docker-compose.tpl", {
-    domain = var.dns_record_name
+    image          = var.startup_fe_image
+    container_name = var.startup_fe_container_name
+    port           = var_startup_fe_nextjs_port
   })
 
   nginx_conf = templatefile("${path.module}/nginx/default.conf.tpl", {
@@ -17,17 +19,17 @@ locals {
   })
 
   be_startup_script = templatefile("${path.module}/be_startup.sh.tpl", {
-    port           = 8080
-    secret_name    = "env-be-local"
-    container_name = "springboot-backend"
-    image          = "jchanho99/backend-dev:latest"
+    port           = var.startup_be_springboot_port
+    secret_name    = var.startup_be_secret_name 
+    container_name = var.startup_be_container_name 
+    image          = var.startup_be_image
   })
 
   db_startup_script = templatefile("${path.module}/db_startup.sh.tpl", {
-    mysql_root_password = "Rlatldms!2!3"
-    mysql_database      = "leafresh"
-    redis_port          = "6379"
-    redis_host          = "localhost"
+    mysql_root_password = var.startup_db_mysql_root_password 
+    mysql_database      = var.startup_db_mysql_database_name 
+    redis_port          = var.startup_db_redis_port
+    redis_host          = var.startup_db_redis_host
   })
 }
 
