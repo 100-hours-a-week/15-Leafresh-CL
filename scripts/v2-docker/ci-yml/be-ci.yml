@@ -204,56 +204,58 @@ jobs:
           cache-from: type=gha,scope=build-backend-prod
           cache-to: type=gha,mode=max,scope=build-backend-prod
 
-  sync-env-to-secret-manager:                   # .env 파일을 GCP Secret Manager에 동기화
+  sync-env-to-secret-manager:
     name: Upload .env to Secret Manager
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository              # 저장소 코드 가져오기
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup gcloud CLI                 # GCP 인증 및 gcloud 설정
+      - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_A }}   # 기본값 (main용)
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           export_default_credentials: true
 
-      - name: Manually activate service account
+      - name: Set GCP Project and Secret Name based on branch
+        id: set-env-vars
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+            echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_A }}" >> $GITHUB_ENV
+            echo "SECRET_NAME=env-be-prod" >> $GITHUB_ENV
+            echo "${{ secrets.DOCKER_PROD }}" > .env
+            echo "Using A project and production .env"
+          else
+            echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_B }}" >> $GITHUB_ENV
+            echo "SECRET_NAME=env-be-dev" >> $GITHUB_ENV
+            echo "${{ secrets.DOCKER_LOCAL }}" > .env
+            echo "Using B project and development .env"
+          fi
+
+      - name: Activate service account
         run: |
           echo '${{ secrets.GCP_SA_KEY }}' > key.json
           gcloud auth activate-service-account --key-file=key.json
-          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-      
-      - name: Confirm gcloud authentication    # 인증 확인 (디버깅용)
+          gcloud config set project $GCP_PROJECT_ID
+
+      - name: Confirm gcloud authentication
         run: gcloud auth list
 
-      - name: Confirm active gcloud project    # 프로젝트 ID 확인 (디버깅용)
+      - name: Confirm active gcloud project
         run: gcloud config get-value project
 
-      - name: Select environment and write .env file   # 브랜치에 따라 ENV 선택
-        run: |
-          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "${{ secrets.DOCKER_PROD }}" > .env
-            echo "env-be-prod" > secret_name.txt
-            echo "Using production .env"
-          else
-            echo "${{ secrets.DOCKER_LOCAL }}" > .env
-            echo "env-be-loacl" > secret_name.txt
-            echo "Using development .env"
-          fi
-        
-      - name: Validate .env content            # 비어있는 .env 방지
+      - name: Validate .env content
         run: |
           if [[ ! -s .env ]]; then
             echo ".env 파일이 비어 있습니다. 종료합니다."
             exit 1
           fi
-      - name: Push .env to Secret Manager      # Secret Manager에 .env 저장 또는 업데이트
+
+      - name: Push .env to Secret Manager
         run: |
-          SECRET_NAME=$(cat secret_name.txt)
-          
           if gcloud secrets describe "$SECRET_NAME" >/dev/null 2>&1; then
             echo "Secret $SECRET_NAME exists, adding new version..."
             gcloud secrets versions add "$SECRET_NAME" --data-file=.env
@@ -261,3 +263,4 @@ jobs:
             echo "Secret $SECRET_NAME does not exist, creating..."
             gcloud secrets create "$SECRET_NAME" --data-file=.env --replication-policy=automatic
           fi
+
