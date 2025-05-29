@@ -1,5 +1,5 @@
 name: Backend CI
-
+ 
 on:
   push:
     branches: [ "develop", "main" ]
@@ -118,6 +118,7 @@ jobs:
             -Dgcp.credentials.location=${gcp_credentials_location} \
             -jar build/libs/*.jar > app.log 2>&1 &
           echo "✅ Java started, waiting for Spring Boot..."
+          
           for i in {1..30}; do
             if curl -s http://localhost:8080/actuator/health | grep UP > /dev/null; then
               echo "✅ Spring Boot is UP"
@@ -263,4 +264,5 @@ jobs:
             echo "Secret $SECRET_NAME does not exist, creating..."
             gcloud secrets create "$SECRET_NAME" --data-file=.env --replication-policy=automatic
           fi
+
 
