@@ -15,8 +15,6 @@ jobs:
   deploy:
     name: BE Docker 배포
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.set-status.outputs.status }}
 
     steps:
       - name: SSH 키 설정
@@ -24,96 +22,108 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.BE_SSH_PRIVATE_KEY }}
 
-      - name: DockerHub 이미지 배포
-        id: deploy-step
+      - name: 환경별 변수 설정
+        id: set-vars
         run: |
-          set -e
-          ENV="${{ github.event.inputs.env }}"
-          HOST="${{ secrets.BE_DEV_HOST }}"
-          if [ "$ENV" = "prod" ]; then
-            HOST="${{ secrets.BE_PROD_HOST }}"
-          fi
+          if [ "${{ github.event.inputs.env }}" = "develop" ]; then
+            echo "HOST=${{ secrets.DEV_SSH_HOST }}" >> $GITHUB_OUTPUT
+            echo "USER=${{ secrets.DEV_SSH_USER }}" >> $GITHUB_OUTPUT
+            echo "PROJECT_ID=leafresh-dev" >> $GITHUB_OUTPUT
+            echo "SECRET_NAME=env-be-local" >> $GITHUB_OUTPUT
+            echo "IMAGE=jchanho99/backend-dev:latest" >> $GITHUB_OUTPUT
+            echo "SA_KEY=${{ secrets.DEV_GCP_SA_KEY_BASE64 }}" >> $GITHUB_OUTPUT
+            echo "PORT=8080" >> $GITHUB_OUTPUT
+          else
+            echo "HOST=${{ secrets.PROD_SSH_HOST }}" >> $GITHUB_OUTPUT
+            echo "USER=${{ secrets.PROD_SSH_USER }}" >> $GITHUB_OUTPUT
+            echo "PROJECT_ID=leafresh-prod" >> $GITHUB_OUTPUT
+            echo "SECRET_NAME=env-be-prod" >> $GITHUB_OUTPUT
+            echo "IMAGE=jchanho99/backend-prod:latest" >> $GITHUB_OUTPUT
+            echo "SA_KEY=${{ secrets.PROD_GCP_SA_KEY_BASE64 }}" >> $GITHUB_OUTPUT
+            echo "PORT=8081" >> $GITHUB_OUTPUT
 
-          IMAGE_TAG="backend:${ENV}"
-          FULL_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_TAG"
+      - name: GCP 서비스 계정 키 업로드
+        run: |
+          echo "${{ steps.set-vars.outputs.SA_KEY }}" | base64 -d > gcp-key.json
+          scp -o StrictHostKeyChecking=no gcp-key.json ${{ steps.set-vars.outputs.USER }}@${{ steps.set-vars.outputs.HOST }}:/home/ubuntu/gcp-key.json
 
-          echo "배포 환경: $ENV"
-          echo "배포 서버: $HOST"
-          echo "Docker 이미지: $FULL_IMAGE"
-
-          ssh $HOST << EOF
+      - name: 서버에 접속해 배포 및 헬스체크 수행
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ steps.set-vars.outputs.USER }}@${{ steps.set-vars.outputs.HOST }} << EOF
             set -e
 
-            echo "Docker 이미지 pull 중"
-            docker pull $FULL_IMAGE
+            echo "GCP 인증 및 Docker 로그인"
+            gcloud auth activate-service-account --key-file=/home/ubuntu/gcp-key.json
+            gcloud auth configure-docker
 
-            if [ "$ENV" = "develop" ]; then
-              echo "개발 환경 배포 중"
+            echo "Secret Manager에서 .env 가져오기"
+            mkdir -p /home/ubuntu/app
+            if ! gcloud secrets versions access latest \
+              --secret="${{ steps.set-vars.outputs.SECRET_NAME }}" \
+              --project="${{ steps.set-vars.outputs.PROJECT_ID }}" > /home/ubuntu/app/.env; then
+              echo ".env 파일 다운로드 실패"
+              exit 1
+            fi
+
+            if [ "${{ github.event.inputs.env }}" = "develop" ]; then
+              echo "[DEV] 환경 배포 중"
               docker stop backend || true
               docker rm backend || true
-              docker run -d --name backend -p 8080:8080 \
-                -e SPRING_PROFILES_ACTIVE=dev \
+              docker pull ${{ steps.set-vars.outputs.IMAGE }}
+              docker run -d --name backend \
+                --env-file /home/ubuntu/app/.env \
+                -p 8080:8080 \
                 --restart always \
-                $FULL_IMAGE
+                ${{ steps.set-vars.outputs.IMAGE }}
             else
-              echo "PROD 환경 Blue-Green 배포 시작"
+              echo "[PROD 환경] Blue-Green 배포 시작"
 
               CURRENT=\$(cat /opt/backend-current 2>/dev/null || echo blue)
               NEXT=\$( [ "\$CURRENT" = "blue" ] && echo green || echo blue )
+              PORT=\${{ steps.set-vars.outputs.PORT }}
 
-              echo "현재 컨테이너: backend-\$CURRENT"
-              echo "새 컨테이너: backend-\$NEXT"
+              echo "[PROD] 현재: \$CURRENT → 다음: \$NEXT"
 
-              docker run -d --name backend-\$NEXT -p 8081:8080 \
-                -e SPRING_PROFILES_ACTIVE=prod \
+              docker stop backend-\$NEXT || true
+              docker rm backend-\$NEXT || true
+              docker pull ${{ steps.set-vars.outputs.IMAGE }}
+
+              echo "현재 사용 중인 컨테이너 이미지 확인"
+              docker inspect --format='{{.Config.Image}}' backend-\$CURRENT || echo "컨테이너가 존재하지 않음"
+
+              docker run -d --name backend-\$NEXT \
+                --env-file /home/ubuntu/app/.env \
+                -p \$PORT:8080 \
                 --restart always \
-                $FULL_IMAGE
+                ${{ steps.set-vars.outputs.IMAGE }}
 
-              echo "헬스체크 시작 (최대 60초 대기)"
-              for i in {1..60}; do
-                STATUS=\$(curl -s http://localhost:8081/actuator/health | grep '"status":"UP"')
-                if [ ! -z "\$STATUS" ]; then
-                  echo "✅ 헬스체크 성공"
+              echo "헬스체크 시작"
+              SUCCESS=false
+              for i in {1..10}; do
+                sleep 5
+                if curl -f http://localhost:\$PORT/actuator/health; then
+                  echo "헬스체크 통과"
+                  SUCCESS=true
                   break
                 fi
-                echo "대기 중... (\$i)"
-                sleep 1
+                echo "헬스체크 재시도 (\$i/10)"
               done
 
-              if [ -z "\$STATUS" ]; then
-                echo "❌ 헬스체크 실패"
-                docker stop backend-\$NEXT || true
-                docker rm backend-\$NEXT || true
+              if [ "\$SUCCESS" = false ]; then
+                echo "헬스체크 실패"
                 exit 1
               fi
 
-              echo "기존 컨테이너 제거"
-              docker stop backend-\$CURRENT || true
-              docker rm backend-\$CURRENT || true
-
-              echo "새 컨테이너 8080 포트로 재시작"
-              docker stop backend-\$NEXT || true
-              docker rm backend-\$NEXT || true
-              docker run -d --name backend-\$NEXT -p 8080:8080 \
-                -e SPRING_PROFILES_ACTIVE=prod \
-                --restart always \
-                $FULL_IMAGE
-
               echo "\$NEXT" > /opt/backend-current
 
-              echo "🎉 Blue-Green 배포 완료: backend-\$NEXT → port 8080"
+              PREV=\$( [ "\$NEXT" = "blue" ] && echo green || echo blue )
+              docker stop backend-\$PREV || true
+              docker rm backend-\$PREV || true
+
+              echo "Blue-Green 배포 완료: \$NEXT 사용 중"
+              docker ps --filter "name=backend-\$NEXT"
             fi
           EOF
-
-      - name: 상태 출력
-        id: set-status
-        run: echo "status=success" >> "$GITHUB_OUTPUT"
-        if: success()
-
-      - name: 실패 상태 출력
-        id: set-status
-        if: failure()
-        run: echo "status=failure" >> "$GITHUB_OUTPUT"
 
   notify:
     name: Discord 알림
@@ -124,15 +134,10 @@ jobs:
     steps:
       - name: 디스코드 알림 전송
         run: |
-          STATUS="${{ needs.deploy.outputs.status }}"
-          ENV="${{ github.event.inputs.env }}"
-
-          if [ "$STATUS" = "success" ]; then
-            MESSAGE="✅ BE ($ENV) 배포 완료 — DockerHub 이미지 pull 및 헬스체크 성공"
-          elif [ "$STATUS" = "failure" ]; then
-            MESSAGE="🚨 BE ($ENV) 배포 실패 — 이미지 pull 또는 헬스체크 오류 발생 ❌"
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            MESSAGE="BE (${{ github.event.inputs.env }}) 배포 완료 — DockerHub 이미지 pull 및 헬스체크 성공"
           else
-            MESSAGE="⚠️ BE ($ENV) 배포 상태: $STATUS"
+            MESSAGE="BE (${{ github.event.inputs.env }}) 배포 실패 — 이미지 pull 또는 헬스체크 오류 발생 ❌"
           fi
 
           curl -H "Content-Type: application/json" \
