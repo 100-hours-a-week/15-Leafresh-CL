@@ -35,21 +35,21 @@ locals {
   })
 
   startup_script_fe = templatefile("${path.module}/fe_startup.sh.tpl", {
-    domain           = var.dns_record_name
-    docker_compose   = local.docker_compose
-    nginx_conf       = local.nginx_conf
+    domain         = var.dns_record_name
+    docker_compose = local.docker_compose
+    nginx_conf     = local.nginx_conf
   })
 
   startup_script_be = templatefile("${path.module}/be_startup.sh.tpl", {
     port           = var.startup_be_springboot_port
-    secret_name    = var.startup_be_secret_name 
-    container_name = var.startup_be_container_name 
+    secret_name    = var.startup_be_secret_name
+    container_name = var.startup_be_container_name
     image          = var.startup_be_image
   })
 
   startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
-    mysql_root_password = var.startup_db_mysql_root_password 
-    mysql_database      = var.startup_db_mysql_database_name 
+    mysql_root_password = var.startup_db_mysql_root_password
+    mysql_database      = var.startup_db_mysql_database_name
     redis_port          = var.startup_db_redis_port
     redis_host          = var.startup_db_redis_host
   })
@@ -164,7 +164,7 @@ resource "google_dns_record_set" "nextjs_dns_record" {
 resource "google_dns_record_set" "springboot_dns_record" {
   project      = "leafresh"
   managed_zone = var.dns_zone_name
-  name         = "be.${var.dns_record_name}."  # 예: be.dev-leafresh.app..
+  name         = "be.${var.dns_record_name}." # 예: be.dev-leafresh.app..
   type         = "A"
   ttl          = 18000
   rrdatas      = [google_compute_instance.be_instance.network_interface[0].access_config[0].nat_ip]

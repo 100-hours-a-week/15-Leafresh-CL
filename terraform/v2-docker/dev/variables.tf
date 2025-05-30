@@ -275,6 +275,51 @@ variable "pubsub_subscription_name" {
 
 
 
+# Storage 변수
+variable "storage_name" {
+  description = "GCS 버킷 이름"
+  type        = string
+}
+
+variable "storage_class" {
+  description = "버킷 클래스"
+  type        = string
+  default     = "STANDARD"
+}
+
+variable "storage_force_destroy" {
+  description = "버킷 내 객체와 버킷 자체 강제 삭제"
+  type        = bool
+  default     = false
+}
+
+variable "storage_cors_origin" {
+  description = "Allowed CORS origins"
+  type        = list(string)
+  default     = ["*"]
+}
+
+variable "storage_cors_method" {
+  description = "Allowed CORS HTTP methods"
+  type        = list(string)
+  default     = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+}
+
+variable "storage_cors_response_header" {
+  description = "Allowed response headers"
+  type        = list(string)
+  default     = ["*"]
+}
+
+variable "storage_cors_max_age_seconds" {
+  description = "Max age for CORS options"
+  type        = number
+  default     = 3600
+}
+
+
+
+
 # iam 변수
 variable "iam_bindings" {
   description = "IAM bindings to be applied"

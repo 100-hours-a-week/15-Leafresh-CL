@@ -23,14 +23,14 @@ module "firewall" {
 
 # 네트워크 모듈
 module "network" {
-  source            = "./modules/network"
-  region            = var.region
-  project_id_dev    = var.project_id_dev
-  project_id_gpu1   = var.project_id_gpu1
-  project_id_gpu2   = var.project_id_gpu2
-  vpc_name_dev  = module.vpc.vpc_name
-  vpc_name_gpu1 = var.vpc_name_gpu1
-  vpc_name_gpu2 = var.vpc_name_gpu2
+  source          = "./modules/network"
+  region          = var.region
+  project_id_dev  = var.project_id_dev
+  project_id_gpu1 = var.project_id_gpu1
+  project_id_gpu2 = var.project_id_gpu2
+  vpc_name_dev    = module.vpc.vpc_name
+  vpc_name_gpu1   = var.vpc_name_gpu1
+  vpc_name_gpu2   = var.vpc_name_gpu2
 
   nat_ip      = var.nat_ip
   nat_router  = var.nat_router
@@ -54,9 +54,9 @@ module "network" {
 
 # VM 모듈
 module "compute" {
-  zone   = var.zone
-  source = "./modules/compute"
-  region                      = var.region
+  zone           = var.zone
+  source         = "./modules/compute"
+  region         = var.region
   project_id_dev = var.project_id_dev
 
   static_ip_fe = module.network.static_ip_fe
@@ -90,17 +90,17 @@ module "compute" {
   dns_zone_name   = var.dns_zone_name
   dns_record_name = var.dns_record_name
 
-  startup_fe_image = var.startup_fe_image
-  startup_fe_container_name = var.startup_fe_container_name
-  startup_fe_nextjs_port = var.startup_fe_nextjs_port
-  startup_be_image = var.startup_be_image
-  startup_be_container_name = var.startup_be_container_name
-  startup_be_secret_name = var.startup_be_secret_name
-  startup_be_springboot_port = var.startup_be_springboot_port
+  startup_fe_image               = var.startup_fe_image
+  startup_fe_container_name      = var.startup_fe_container_name
+  startup_fe_nextjs_port         = var.startup_fe_nextjs_port
+  startup_be_image               = var.startup_be_image
+  startup_be_container_name      = var.startup_be_container_name
+  startup_be_secret_name         = var.startup_be_secret_name
+  startup_be_springboot_port     = var.startup_be_springboot_port
   startup_db_mysql_database_name = var.startup_db_mysql_database_name
   startup_db_mysql_root_password = var.startup_db_mysql_root_password
-  startup_db_redis_host = var.startup_db_redis_host
-  startup_db_redis_port = var.startup_db_redis_port
+  startup_db_redis_host          = var.startup_db_redis_host
+  startup_db_redis_port          = var.startup_db_redis_port
 }
 
 # Pub/Sub 모듈
@@ -114,11 +114,28 @@ module "pubsub" {
 }
 
 
+# Storage 모듈
+module "storage" {
+  source                = "./modules/storage"
+  storage_name          = var.storage_name
+  project_id_dev        = var.project_id_dev
+  region                = var.region
+  storage_class         = var.storage_class
+  storage_force_destroy = true
+
+  storage_cors_origin          = var.storage_cors_origin
+  storage_cors_method          = var.storage_cors_method
+  storage_cors_response_header = var.storage_cors_response_header
+  storage_cors_max_age_seconds = var.storage_cors_max_age_seconds
+}
+
+
+
 # IAM 모듈
 module "iam" {
   source         = "./modules/iam"
   project_id_dev = var.project_id_dev
-
-  iam_bindings = var.iam_bindings
+  storage_name   = module.storage.storage_name
+  iam_bindings   = var.iam_bindings
 }
 
