@@ -7,6 +7,12 @@ resource "google_compute_subnetwork" "public_subnet_fe" {
   ip_cidr_range = var.subnet_cidr_fe
   region        = var.region
   network       = var.vpc_self_link
+
+
+  labels = {
+    role = "fe"
+    env  = "dev"
+  }
 }
 
 resource "google_compute_subnetwork" "private_subnet_be" {
@@ -15,6 +21,11 @@ resource "google_compute_subnetwork" "private_subnet_be" {
   ip_cidr_range = var.subnet_cidr_be
   region        = var.region
   network       = var.vpc_self_link
+
+  labels = {
+    role = "be"
+    env  = "dev"
+  }
 }
 
 resource "google_compute_subnetwork" "private_subnet_db" {
@@ -23,6 +34,11 @@ resource "google_compute_subnetwork" "private_subnet_db" {
   ip_cidr_range = var.subnet_cidr_db
   region        = var.region
   network       = var.vpc_self_link
+
+  labels = {
+    role = "db"
+    env  = "dev"
+  }
 }
 
 
@@ -32,6 +48,11 @@ resource "google_compute_address" "nat_ip" {
   name         = var.nat_ip
   region       = var.region
   address_type = "EXTERNAL"
+
+  labels = {
+    purpose = "nat-ip"
+    env     = "dev"
+  }
 }
 
 resource "google_compute_router" "nat_router" {
@@ -39,6 +60,11 @@ resource "google_compute_router" "nat_router" {
   name    = var.nat_router
   region  = var.region
   network = var.vpc_self_link
+
+  labels = {
+    purpose = "nat-router"
+    env     = "dev"
+  }
 }
 
 resource "google_compute_router_nat" "nat_gateway" {
@@ -58,6 +84,11 @@ resource "google_compute_router_nat" "nat_gateway" {
     name                    = google_compute_subnetwork.private_subnet_db.self_link
     source_ip_ranges_to_nat = ["ALL_IP_RANGES"] # 해당 서브넷의 모든 IP 범위 NAT 적용
   }
+
+  labels = {
+    purpose = "nat-gateway"
+    env     = "dev"
+  }
 }
 
 # FE 외부 IP 부여
@@ -65,6 +96,11 @@ resource "google_compute_address" "static_ip_fe" {
   name    = var.static_ip_name_fe
   region  = var.region
   project = var.project_id_dev
+
+  labels = {
+    role = "fe"
+    env  = "dev"
+  }
 }
 
 # BE 외부 IP 부여
@@ -72,6 +108,11 @@ resource "google_compute_address" "static_ip_be" {
   name    = var.static_ip_name_be
   region  = var.region
   project = var.project_id_dev
+
+  labels = {
+    role = "be"
+    env  = "dev"
+  }
 }
 
 # VPC Peering 정의

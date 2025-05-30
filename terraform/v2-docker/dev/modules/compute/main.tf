@@ -1,5 +1,27 @@
 # modules/compute/main.tf
 
+# labels 적용
+locals {
+  common_labels = {
+    app         = "leafresh"
+    environment = "dev"
+    team        = "infra"
+  }
+
+  labels_fe = merge(local.common_labels, {
+    role = "fe"
+  })
+
+  labels_be = merge(local.common_labels, {
+    role = "be"
+  })
+
+  labels_db = merge(local.common_labels, {
+    role = "db"
+  })
+}
+
+
 # 템플릿 로컬 적용
 locals {
   docker_compose = templatefile("${path.module}/nginx/docker-compose.tpl", {
@@ -12,20 +34,20 @@ locals {
     domain = var.dns_record_name
   })
 
-  fe_startup_script = templatefile("${path.module}/fe_startup.sh.tpl", {
+  startup_script_fe = templatefile("${path.module}/fe_startup.sh.tpl", {
     domain           = var.dns_record_name
     docker_compose   = local.docker_compose
     nginx_conf       = local.nginx_conf
   })
 
-  be_startup_script = templatefile("${path.module}/be_startup.sh.tpl", {
+  startup_script_be = templatefile("${path.module}/be_startup.sh.tpl", {
     port           = var.startup_be_springboot_port
     secret_name    = var.startup_be_secret_name 
     container_name = var.startup_be_container_name 
     image          = var.startup_be_image
   })
 
-  db_startup_script = templatefile("${path.module}/db_startup.sh.tpl", {
+  startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
     mysql_root_password = var.startup_db_mysql_root_password 
     mysql_database      = var.startup_db_mysql_database_name 
     redis_port          = var.startup_db_redis_port
@@ -57,11 +79,13 @@ resource "google_compute_instance" "fe_instance" {
     }
   }
 
-  metadata_startup_script = local.fe_startup_script
+  metadata_startup_script = local.startup_script_fe
 
   service_account {
     scopes = ["cloud-platform"] # 전체 권한 부여 기능, 수정 필요 
   }
+
+  labels = local.labels_fe
 }
 
 
@@ -88,11 +112,13 @@ resource "google_compute_instance" "be_instance" {
     }
   }
 
-  metadata_startup_script = local.fe_startup_script
+  metadata_startup_script = local.startup_script_be
 
   service_account {
     scopes = ["cloud-platform"]
   }
+
+  labels = local.labels_be
 }
 
 # MySQL 및 Redis GCE 인스턴스 (하나의 인스턴스에서 실행)
@@ -115,11 +141,13 @@ resource "google_compute_instance" "db_instance" {
     network_ip = var.static_internal_ip_db
   }
 
-  metadata_startup_script = local.db_startup_script
+  metadata_startup_script = local.startup_script_db
 
   service_account {
     scopes = ["cloud-platform"]
   }
+
+  labels = local.labels_db
 }
 
 # Cloud DNS A 레코드 추가 (Next.js 인스턴스 외부 IP를 가리키도록)

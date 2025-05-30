@@ -3,6 +3,13 @@
 resource "google_pubsub_topic" "be_topic" {
   project = var.project_id_dev
   name    = var.pubsub_topic_name
+
+  labels = {
+    role        = "topic"
+    purpose     = "event-stream"
+    environment = "dev"
+    app         = "leafresh"
+  }
 }
 
 resource "google_pubsub_subscription" "be_subscription" {
@@ -14,5 +21,12 @@ resource "google_pubsub_subscription" "be_subscription" {
   depends_on = [
     google_pubsub_topic.be_topic
   ]
+
+  labels = {
+    role        = "subscription"
+    purpose     = "event-consumer"
+    environment = "dev"
+    app         = "leafresh"
+  }
 }
 
