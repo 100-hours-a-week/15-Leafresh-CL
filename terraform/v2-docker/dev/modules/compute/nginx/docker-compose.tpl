@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     image: ${image}
@@ -19,5 +17,5 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - ${container_name}
+      - app
 

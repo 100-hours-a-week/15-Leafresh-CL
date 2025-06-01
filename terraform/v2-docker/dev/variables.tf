@@ -321,8 +321,16 @@ variable "storage_cors_max_age_seconds" {
 
 
 # iam 변수
-variable "iam_bindings" {
-  description = "IAM bindings to be applied"
+variable "iam_project_bindings" {
+  description = "프로젝트 권한과 멤버 바인딩"
+  type = list(object({
+    role   = string
+    member = string
+  }))
+}
+
+variable "iam_storage_bindings" {
+  description = "스토리지 권한과 멤버 바인딩"
   type = list(object({
     role   = string
     member = string

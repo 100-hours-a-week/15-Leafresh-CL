@@ -6,7 +6,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/${domain}/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
+    # ssl_ciphers HIGH:!aNULL:!MD5;
 
     location / {
         proxy_pass http://localhost:3000;

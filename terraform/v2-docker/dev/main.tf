@@ -136,6 +136,7 @@ module "iam" {
   source         = "./modules/iam"
   project_id_dev = var.project_id_dev
   storage_name   = module.storage.storage_name
-  iam_bindings   = var.iam_bindings
+  iam_project_bindings   = var.iam_project_bindings
+  iam_storage_bindings   = var.iam_storage_bindings
 }
 
