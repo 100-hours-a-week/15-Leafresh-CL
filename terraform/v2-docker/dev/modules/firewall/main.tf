@@ -166,7 +166,23 @@ resource "google_compute_firewall" "allow_iap_ssh" {
     ports    = ["22"]
   }
 
-  # IAP가 사용하는 IP 주소 범위
+  # IP range that IAP uses.
   source_ranges = ["35.235.240.0/20"]
   description   = "Allow SSH access through IAP to private instances."
+}
+
+resource "google_compute_firewall" "allow_ssh" {
+  project = var.project_id_dev
+  name    = "allow-ssh"
+  network = var.vpc_name
+
+  target_tags = [var.tag_fe, var.tag_be, var.tag_db]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = ["0.0.0.0/0"] # 또는 본인 IP만: ["203.0.113.100/32"]
+  description   = "Allow SSH access from anywhere (not using IAP)."
 }
