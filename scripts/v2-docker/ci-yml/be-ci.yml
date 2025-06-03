@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend CI/CD
  
 on:
   push:
@@ -8,6 +8,66 @@ on:
     types: [opened, synchronize, reopened, closed]
 
 jobs:
+  sync-env-to-GSM:
+    name: Upload .env to Secret Manager
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
+          credentials_json: ${{ secrets.GCP_SA_KEY_DEV_JSON }}
+          export_default_credentials: true
+
+      - name: Set GCP Secret Name based on branch
+        id: set-env-vars
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+            echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_PROD }}" >> $GITHUB_ENV
+            echo "SECRET_NAME=env-be-prod" >> $GITHUB_ENV
+            echo "${{ secrets.ENV_DOCKER_PROD }}" > .env
+            echo "Using A project and production .env"
+          else
+            echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_DEV }}" >> $GITHUB_ENV
+            echo "SECRET_NAME=env-be-dev" >> $GITHUB_ENV
+            echo "${{ secrets.ENV_DOCKER_LOCAL }}" > .env
+            echo "Using B project and development .env"
+          fi
+
+      - name: Setup Google Cloud SDK and Set GCP Project
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Change to Correct Project
+        run: |
+          echo '${{ secrets.GCP_SA_KEY_DEV_BASE64 }}' | base64 -d > key.json
+          gcloud auth activate-service-account --key-file=key.json
+          gcloud config set project $GCP_PROJECT_ID
+
+      - name: Confirm active gcloud project
+        run: gcloud config get-value project
+
+      - name: Validate .env content
+        run: |
+          if [[ ! -s .env ]]; then
+            echo ".env file EMPTY."
+            exit 1
+          fi
+
+      - name: Push .env to Secret Manager
+        run: |
+          if gcloud secrets describe "$SECRET_NAME" >/dev/null 2>&1; then
+            echo "Secret $SECRET_NAME exists, adding new version..."
+            gcloud secrets versions add "$SECRET_NAME" --data-file=.env
+          else
+            echo "Secret $SECRET_NAME does not exist, creating..."
+            gcloud secrets create "$SECRET_NAME" --data-file=.env --replication-policy=automatic
+          fi
+
   unit-test:                                    # 단위 테스트를 수행하는 Job (develop 브랜치 PR 대상)
     name: Unit Test
     if: github.event_name == 'pull_request' && github.base_ref == 'develop'
@@ -78,7 +138,7 @@ jobs:
           java-version: 21
 
       - name: Create .env file from GitHub Secret
-        run: echo "${{ secrets.DOCKER_LOCAL }}" > .env
+        run: echo "${{ secrets.ENV_DOCKER_LOCAL }}" > .env
 
       - name: Export environment variables
         run: |
@@ -90,11 +150,11 @@ jobs:
       
       - name: Export .env variables to environment
         run: |
-          echo "${{ secrets.DOCKER_LOCAL }}" > .env
+          echo "${{ secrets.ENV_DOCKER_LOCAL }}" > .env
           grep -v '^#' .env | xargs -L1 echo export >> $GITHUB_ENV
       
       - name: Create GCP credentials file
-        run: echo "${{ secrets.GCP_SA_KEY }}" > /home/runner/gcp-sa-key.json
+        run: echo "${{ secrets.GCP_SA_KEY_DEV_BASE64 }}" | base64 -d > /home/runner/gcp-sa-key.json
 
       - name: Build Spring Boot App
         run: ./gradlew bootJar
@@ -140,11 +200,9 @@ jobs:
         run: pkill -f 'java -jar'
 
   build-dev:                                    # develop 브랜치에서 Docker 이미지 빌드 및 푸시
-    name: Build and Push Backend Docker (develop only)
+    name: Build and Push Docker (dev)
     needs: unit-test
-    if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'develop')
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3              # 소스코드 체크아웃
@@ -169,20 +227,24 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/backend-dev:latest
-          cache-from: type=gha,scope=build-backend-dev
-          cache-to: type=gha,mode=max,scope=build-backend-dev
+          tags: jchanho99/backend-develop:latest
+          cache-from: type=gha,scope=build-backend-develop
+          cache-to: type=gha,mode=max,scope=build-backend-develop
 
   build-prod:                                   # main 브랜치에서 Docker 이미지 빌드 및 푸시
-    name: Build and Push Backend Docker (main only)
+    name: Build and Push Docker (prod)
     needs: integration-test
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'main'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./
     steps:
       - uses: actions/checkout@v3              # 코드 체크아웃
+      
+      - name: Get short commit SHA
+        id: get_sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx             # Docker Buildx 설정
         uses: docker/setup-buildx-action@v3
@@ -201,68 +263,192 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/backend-prod:latest
+          tags: jchanho99/backend-prod:${{ env.SHORT_SHA }}
           cache-from: type=gha,scope=build-backend-prod
           cache-to: type=gha,mode=max,scope=build-backend-prod
 
-  sync-env-to-secret-manager:
-    name: Upload .env to Secret Manager
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+
+  deploy-dev:
+    name: BE Docker 배포 (Develop)
+    needs: [build-dev]
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
     runs-on: ubuntu-latest
-
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@v1
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID_A }}   # 기본값 (main용)
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
 
-      - name: Set GCP Project and Secret Name based on branch
-        id: set-env-vars
+      - name: Upload GCP json key to BE Server
         run: |
-          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_A }}" >> $GITHUB_ENV
-            echo "SECRET_NAME=env-be-prod" >> $GITHUB_ENV
-            echo "${{ secrets.DOCKER_PROD }}" > .env
-            echo "Using A project and production .env"
-          else
-            echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_B }}" >> $GITHUB_ENV
-            echo "SECRET_NAME=env-be-dev" >> $GITHUB_ENV
-            echo "${{ secrets.DOCKER_LOCAL }}" > .env
-            echo "Using B project and development .env"
+          echo "${{ secrets.GCP_SA_KEY_DEV_BASE64 }}" | base64 -d > gcp-key.json
+          scp -o StrictHostKeyChecking=no gcp-key.json ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:/home/ubuntu/gcp-key.json
+
+      - name: Deploy Backend (Develop) via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST_DEV }}
+          username: ${{ secrets.SSH_USER_DEV }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+          script: |
+            set -e
+            echo "GCP 인증 및 Docker 로그인"
+            gcloud auth activate-service-account --key-file=/home/ubuntu/gcp-key.json
+            gcloud auth configure-docker
+
+            echo "Secret Manager에서 .env 기져오기"
+            mkdir -p /home/ubuntu/app
+            if ! gcloud secrets versions access latest \
+              --secret="env-be-dev" \
+              --project="leafresh-dev2" > /home/ubuntu/app/.env; then
+              echo ".env 파일 다운로드 실패"
+              exit 1
+            fi
+
+            echo "[DEV] 환경 배포 중"
+            sudo docker stop backend-develop || true
+            sudo docker rm backend-develop || true
+            sudo docker pull jchanho99/backend-dev:latest
+            sudo docker run -d --name backend-develop \
+              --env-file /home/ubuntu/app/.env \
+              -p 8080:8080 \
+              --restart always \
+              jchanho99/backend-dev:latest
+      
+      - name: Set Status (Dev)
+        id: set-status
+        if: success()
+        run: echo "status=success" >> "$GITHUB_OUTPUT"
+
+      - name: Set Status (Dev Failure)
+        if: failure() && steps.deploy-step.outcome == 'failure' # deploy-step이 실패했을 때만
+        run: echo "status=failure" >> "$GITHUB_OUTPUT"
+
+  deploy-prod:
+    name: BE Docker 배포 (Prod)
+    needs: [build-prod]
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: SSH 키 설정
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+
+      - name: Upload GCP json key to BE Server
+        run: |
+          echo "${{ secrets.GCP_SA_KEY_PROD_BASE64 }}" | base64 -d > gcp-key.json
+          scp -o StrictHostKeyChecking=no gcp-key.json ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:/home/ubuntu/gcp-key.json
+
+      - name: Deploy Backend (Prod) via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST_PROD }}
+          username: ${{ secrets.SSH_USER_PROD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+          script: |
+            set -e
+            echo "GCP 인증 및 Docker 로그인"
+            gcloud auth activate-service-account --key-file=/home/ubuntu/gcp-key.json
+            gcloud auth configure-docker
+
+            echo "Secret Manager에서 .env 가져오기"
+            mkdir -p /home/ubuntu/app
+            if ! gcloud secrets versions access latest \
+              --secret="env-be-prod" \
+              --project="leafresh-prod" > /home/ubuntu/app/.env; then
+              echo ".env 파일 다운로드 실패"
+              exit 1
+            fi
+
+            echo "[PROD 환경] Blue-Green 배포 시작"
+            CURRENT=$(cat /opt/backend-current 2>/dev/null || echo blue)
+            NEXT=$( [ "$CURRENT" = "blue" ] && echo green || echo blue )
+            echo "[PROD] 현재: $CURRENT → 다음: $NEXT"
+
+            docker stop backend-$NEXT || true
+            docker rm backend-$NEXT || true
+            docker pull jchanho99/backend-prod:latest
+
+            echo "현재 사용 중인 컨테이너 이미지 확인"
+            docker inspect --format='{{.Config.Image}}' backend-$CURRENT || echo "컨테이너가 존재하지 않음"
+
+            docker run -d --name backend-$NEXT \
+              --env-file /home/ubuntu/app/.env \
+              -p 8081:8080 \
+              --restart always \
+              jchanho99/backend-prod:latest
+
+            echo "헬스체크 시작"
+            SUCCESS=false
+            for i in {1..10}; do
+              sleep 5
+              if curl -f http://localhost:8081/actuator/health; then
+                echo "헬스체크 통과"
+                SUCCESS=true
+                break
+              fi
+              echo "헬스체크 재시도 ($i/10)"
+            done
+
+            if [ "$SUCCESS" = false ]; then
+              echo "헬스체크 실패"
+              exit 1
+            fi
+
+            echo "$NEXT" > /opt/backend-current
+            PREV=$( [ "$NEXT" = "blue" ] && echo green || echo blue )
+            docker stop backend-$PREV || true
+            docker rm backend-$PREV || true
+
+      - name: Set Status (Prod)
+        id: set-status
+        if: success()
+        run: echo "status=success" >> "$GITHUB_OUTPUT"
+
+      - name: Set Status (Prod Failure)
+        if: failure() && steps.deploy-step.outcome == 'failure' # deploy-step이 실패했을 때만
+        run: echo "status=failure" >> "$GITHUB_OUTPUT"
+
+  notify:
+    name: Discord Notification
+    needs: [deploy-dev, deploy-prod]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Message
+        run: |
+          MESSAGE=""
+
+          # Check Dev Deploy Status
+          if [ "${{ needs.deploy-dev.result }}" != "" ]; then
+            STATUS_DEV="${{ needs.deploy-dev.outputs.status }}"
+            if [ "$STATUS_DEV" = "success" ]; then
+              MESSAGE="${MESSAGE}✅ \`[BE develop]\` 배포 완료\n"
+            elif [ "$STATUS_DEV" = "failure" ]; then
+              MESSAGE="${MESSAGE}🚨 \`[BE develop]\` 배포 실패\n"
+            fi
           fi
 
-      - name: Activate service account
-        run: |
-          echo '${{ secrets.GCP_SA_KEY }}' > key.json
-          gcloud auth activate-service-account --key-file=key.json
-          gcloud config set project $GCP_PROJECT_ID
-
-      - name: Confirm gcloud authentication
-        run: gcloud auth list
-
-      - name: Confirm active gcloud project
-        run: gcloud config get-value project
-
-      - name: Validate .env content
-        run: |
-          if [[ ! -s .env ]]; then
-            echo ".env 파일이 비어 있습니다. 종료합니다."
-            exit 1
+          # Check Prod Deploy Status
+          if [ "${{ needs.deploy-prod.result }}" != "" ]; then
+            STATUS_PROD="${{ needs.deploy-prod.outputs.status }}"
+            if [ "$STATUS_PROD" = "success" ]; then
+              MESSAGE="${MESSAGE}✅ \`[BE prod]\` 배포 완료 (Blue-Green)\n"
+            elif [ "$STATUS_PROD" = "failure" ]; then
+              MESSAGE="${MESSAGE}🚨 \`[BE prod]\` 배포 실패 (헬스체크 실패 등)\n"
+            fi
           fi
 
-      - name: Push .env to Secret Manager
-        run: |
-          if gcloud secrets describe "$SECRET_NAME" >/dev/null 2>&1; then
-            echo "Secret $SECRET_NAME exists, adding new version..."
-            gcloud secrets versions add "$SECRET_NAME" --data-file=.env
-          else
-            echo "Secret $SECRET_NAME does not exist, creating..."
-            gcloud secrets create "$SECRET_NAME" --data-file=.env --replication-policy=automatic
+          if [ -z "$MESSAGE" ]; then
+            MESSAGE="⚠️ 배포 상태 정보를 찾을 수 없습니다."
           fi
 
-
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
