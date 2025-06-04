@@ -3,6 +3,8 @@ name: Frontend CI/CD
 on:
   pull_request:
     branches: [ "develop", "main" ]
+  push:
+    tags: ['v*-dev', 'v*' ]
 
 jobs:
   setup:
@@ -149,56 +151,69 @@ jobs:
   build-dev:
     name: Build and Push Docker (dev)
     needs: [lint-and-unit-test]
-    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-dev') 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/frontend-develop:latest
+          tags: jchanho99/frontend-develop:${{ env.VERSION }}
 
   build-prod:
     name: Build and Push Docker (prod)
     needs: [integration-test]
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-dev') 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Get short commit SHA
-        id: get_sha
-        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_ENV"
+      
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
+      
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/frontend-prod:${{ env.SHORT_SHA }}
-  
+          tags: |
+            jchanho99/frontend-prod:${{ env.VERSION }}
+            jchanho99/frontend-prod:latest
+
   deploy-dev:
     name: Deploy to Dev Server
-    # if: github.event.pull_request.merged == true && github.base_ref == 'develop' # PR이 develop에 merge되었을 때 실행
-    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-dev')
     needs: [build-dev]
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.set-status.outputs.status }}
     steps:
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
       - name: Deploy to Dev
         id: deploy-step
         uses: appleboy/ssh-action@v1.0.3 # 특정 버전 사용 권장
@@ -209,11 +224,12 @@ jobs:
           port: ${{ secrets.LEAFRESH_DEV_SSH_PORT || 22 }} # 개발 서버 SSH 포트 Secret (없으면 22)
           script: |
             set -e # 오류 발생 시 즉시 스크립트 중단
-            IMAGE="jchanho99/frontend-develop:latest"
+            IMAGE="jchanho99/frontend-develop:${VERSION}"
             cd /opt/frontend/
             echo "PWD: $(pwd)"
             sudo docker compose down
             sudo docker rm frontend-develop || true # frontend-develop 컨테이너 삭제 (오류 무시)
+            sudo docker pull "$IMAGE"
             sudo docker compose up -d
             
       - name: Set Status (Dev)
@@ -227,13 +243,16 @@ jobs:
 
   deploy-prod:
     name: Deploy to Prod Server (Blue-Green)
-    # if: github.event.pull_request.merged == true && github.base_ref == 'main' # PR이 main에 merge되었을 때 실행
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-dev')
     needs: [build-prod]
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.set-status.outputs.status }}
     steps:
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
       - name: Deploy to Prod
         id: deploy-step
         uses: appleboy/ssh-action@v1.0.3 # 특정 버전 사용 권장
@@ -244,7 +263,7 @@ jobs:
           port: ${{ secrets.LEAFRESH_PROD_SSH_PORT || 22 }} # 프로덕션 서버 SSH 포트 Secret (없으면 22)
           script: |
             set -e # 오류 발생 시 즉시 스크립트 중단
-            IMAGE="jchanho99/frontend-prod:${{ env.SHORT_SHA }}"
+            IMAGE="jchanho99/frontend-prod:${{ env.VERSION }}"
             HEALTH_CHECK_URL="http://localhost:3001" # 헬스 체크 URL
 
             echo "🚀 Starting Prod Blue-Green Deployment to host: ${{ secrets.LEAFRESH_PROD_HOST }}"
@@ -286,15 +305,10 @@ jobs:
                     echo "✅ Health check passed for $NEXT on attempt $i (HTTP $HTTP_CODE with <title>)."
                     HEALTH_CHECK_PASSED=true
                     break
-                  else
-                    echo "⏳ Waiting ($i)... Health check for $NEXT: HTTP $HTTP_CODE but <title> not found. Retrying..."
                   fi
-                else
-                  echo "⏳ Waiting ($i)... Health check for $NEXT: Failed with HTTP status $HTTP_CODE. Retrying..."
                 fi
-              else
-                echo "⏳ Waiting ($i)... Health check for $NEXT: Port 3001 not listening. Retrying..."
               fi
+              echo "⏳ Waiting ($i)..."
               sleep 1
             done
 
