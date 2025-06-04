@@ -1,8 +1,10 @@
 # modules/pubsub/main.tf
 
-resource "google_pubsub_topic" "be_topic" {
+resource "google_pubsub_topic" "be_topics" {
+  for_each = var.pubsub_topic_names
+
+  name    = each.key
   project = var.project_id_dev
-  name    = var.pubsub_topic_name
 
   labels = {
     role        = "topic"
@@ -12,15 +14,14 @@ resource "google_pubsub_topic" "be_topic" {
   }
 }
 
-resource "google_pubsub_subscription" "be_subscription" {
-  name                 = var.pubsub_subscription_name
-  project              = var.project_id_dev
-  topic                = "projects/${var.project_id_dev}/topics/${google_pubsub_topic.be_topic.name}"
-  ack_deadline_seconds = 20
+resource "google_pubsub_subscription" "be_subscriptions" {
+  for_each = var.pubsub_topic_names
 
-  depends_on = [
-    google_pubsub_topic.be_topic
-  ]
+  name  = each.value.subscription_name
+  topic = google_pubsub_topic.be_topics[each.key].id
+  project = var.project_id_dev
+
+  ack_deadline_seconds = 20
 
   labels = {
     role        = "subscription"
@@ -28,5 +29,8 @@ resource "google_pubsub_subscription" "be_subscription" {
     environment = "dev"
     app         = "leafresh"
   }
-}
 
+  depends_on = [
+    google_pubsub_topic.be_topics
+  ]
+}

@@ -15,9 +15,7 @@ module "firewall" {
   tag_be = var.tag_be
   tag_db = var.tag_db
 
-  # vpc_name_gpu1        = var.vpc_name_gpu1
   vpc_cidr_block_gpu1 = var.vpc_cidr_block_gpu1
-  # vpc_name_gpu2        = var.vpc_name_gpu2
   vpc_cidr_block_gpu2 = var.vpc_cidr_block_gpu2
 }
 
@@ -32,18 +30,17 @@ module "network" {
   vpc_name_gpu1   = var.vpc_name_gpu1
   vpc_name_gpu2   = var.vpc_name_gpu2
 
-  nat_ip      = var.nat_ip
-  nat_router  = var.nat_router
-  nat_gateway = var.nat_gateway
+  # nat_ip      = var.nat_ip
+  # nat_router  = var.nat_router
+  # nat_gateway = var.nat_gateway
 
   static_ip_name_fe = var.static_ip_name_fe
   static_ip_name_be = var.static_ip_name_be
+  static_ip_name_db = var.static_ip_name_db
 
   subnet_name_fe = var.subnet_name_fe
   subnet_name_be = var.subnet_name_be
   subnet_name_db = var.subnet_name_db
-
-  # vpc_cidr_block         = var.vpc_cidr_block
 
   subnet_cidr_fe = var.subnet_cidr_fe
   subnet_cidr_be = var.subnet_cidr_be
@@ -61,7 +58,7 @@ module "compute" {
 
   static_ip_fe = module.network.static_ip_fe
   static_ip_be = module.network.static_ip_be
-
+  static_ip_db = module.network.static_ip_db
 
   static_internal_ip_fe = var.static_internal_ip_fe
   static_internal_ip_be = var.static_internal_ip_be
@@ -109,8 +106,7 @@ module "pubsub" {
   project_id_dev = var.project_id_dev
   project_number = var.project_number
 
-  pubsub_topic_name        = var.pubsub_topic_name
-  pubsub_subscription_name = var.pubsub_subscription_name
+  pubsub_topic_names       = var.pubsub_topic_names
 }
 
 

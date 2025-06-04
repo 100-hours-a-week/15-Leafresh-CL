@@ -70,20 +70,20 @@ variable "vpc_self_link" {
   type        = string
 }
 
-variable "nat_ip" {
-  description = "NAT IP 주소"
-  type        = string
-}
+# variable "nat_ip" {
+#   description = "NAT IP 주소"
+#   type        = string
+# }
 
-variable "nat_router" {
-  description = "NAT 라우터 이름"
-  type        = string
-}
+# variable "nat_router" {
+#   description = "NAT 라우터 이름"
+#   type        = string
+# }
 
-variable "nat_gateway" {
-  description = "NAT 게이트웨이 이름"
-  type        = string
-}
+# variable "nat_gateway" {
+#   description = "NAT 게이트웨이 이름"
+#   type        = string
+# }
 
 variable "static_ip_name_fe" {
   description = "FE 외부 IP 이름"
@@ -92,5 +92,10 @@ variable "static_ip_name_fe" {
 
 variable "static_ip_name_be" {
   description = "BE 외부 IP 이름"
+  type        = string
+}
+
+variable "static_ip_name_db" {
+  description = "DB 외부 IP 이름"
   type        = string
 }

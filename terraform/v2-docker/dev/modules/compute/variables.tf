@@ -25,6 +25,10 @@ variable "static_ip_be" {
   type        = string
 }
 
+variable "static_ip_db" {
+  description = "DB 외부 IP 이름"
+  type        = string
+}
 
 variable "static_internal_ip_fe" {
   description = "Next.js 인스턴스의 내부 IP"

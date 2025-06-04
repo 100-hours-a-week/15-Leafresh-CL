@@ -139,6 +139,9 @@ resource "google_compute_instance" "db_instance" {
   network_interface {
     subnetwork = var.subnet_db_self_link
     network_ip = var.static_internal_ip_db
+    access_config {
+      nat_ip = var.static_ip_db
+    }
   }
 
   metadata_startup_script = local.startup_script_db

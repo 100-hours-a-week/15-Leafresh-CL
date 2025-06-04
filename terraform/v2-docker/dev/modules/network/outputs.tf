@@ -15,10 +15,10 @@ output "subnet_db_self_link" {
   value       = google_compute_subnetwork.private_subnet_db.self_link
 }
 
-output "nat_gateway_ip" {
-  description = "NAT Gateway의 외부 IP 주소"
-  value       = google_compute_address.nat_ip.address
-}
+# output "nat_gateway_ip" {
+#   description = "NAT Gateway의 외부 IP 주소"
+#   value       = google_compute_address.nat_ip.address
+# }
 
 output "static_ip_fe" {
   description = "FE의 외부 IP 주소"
@@ -28,4 +28,9 @@ output "static_ip_fe" {
 output "static_ip_be" {
   description = "BE의 외부 IP 주소"
   value       = google_compute_address.static_ip_be.address
+}
+
+output "static_ip_db" {
+  description = "DB의 외부 IP 주소"
+  value       = google_compute_address.static_ip_db.address
 }

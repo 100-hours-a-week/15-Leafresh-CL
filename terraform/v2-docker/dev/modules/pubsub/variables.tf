@@ -10,14 +10,9 @@ variable "project_number" {
   type        = string
 }
 
-variable "pubsub_topic_name" {
-  description = "GCP 토픽 이름"
-  type        = string
-  default     = "leafresh-pubsub-be-topic"
-}
-
-variable "pubsub_subscription_name" {
-  description = "GCP 구독 이름"
-  type        = string
-  default     = "leafresh-pubsub-be-subscription"
+variable "pubsub_topic_names" {
+  type = map(object({
+    subscription_name = string
+  }))
+  description = "pub/sub topics and subscriptions"
 }

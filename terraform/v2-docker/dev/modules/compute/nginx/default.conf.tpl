@@ -12,10 +12,10 @@ server {
         proxy_pass http://app:3000;
         # proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
-        proxy_set_header Host ${$host};
-        proxy_set_header X-Real-IP ${$remote_addr};
-        proxy_set_header X-Forwarded-For ${$proxy_add_x_forwarded_for};
-        proxy_set_header X-Forwarded-Proto ${$scheme};
+        proxy_set_header Host \u0024host;
+        proxy_set_header X-Real-IP \u0024remote_addr;
+        proxy_set_header X-Forwarded-For \u0024proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \u0024scheme;
     }
 }
 
