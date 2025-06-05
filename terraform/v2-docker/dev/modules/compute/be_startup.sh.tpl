@@ -20,9 +20,32 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 sudo mkdir -p /etc/app
 gcloud secrets versions access latest --secret="${secret_name}" > /etc/app/.env
 
-# Docker Hub에서 이미지 다운로드 및 실행
-sudo docker run -d \
-  --name ${container_name} \
-  -p ${port}:${port} \
-  --env-file /etc/app/.env \
-  ${image}
+# 도메인 변수 정의
+DOMAIN="${domain}"
+
+# 인증서 폴더 준비
+sudo mkdir -p /etc/letsencrypt /var/lib/letsencrypt
+
+# 인증서 발급 (Certbot 컨테이너 사용)
+sudo docker run --rm -p 80:80 \
+  -v "/etc/letsencrypt:/etc/letsencrypt" \
+  -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+  certbot/certbot certonly --standalone --non-interactive --agree-tos \
+  -m admin@${domain} -d ${domain}
+
+# Compose 및 Nginx 설정 준비
+sudo mkdir -p /opt/frontend/nginx
+
+# docker-compose.yml
+cat > /opt/frontend/docker-compose.yml <<EOF
+${docker_compose}
+EOF
+
+# nginx/default.conf
+cat > /opt/frontend/nginx/default.conf <<EOF
+${nginx_conf}
+EOF
+
+# 서비스 실행
+cd /opt/frontend
+sudo docker compose up -d

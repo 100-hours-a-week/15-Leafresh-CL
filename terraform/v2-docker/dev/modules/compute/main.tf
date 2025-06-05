@@ -24,27 +24,43 @@ locals {
 
 # 템플릿 로컬 적용
 locals {
-  docker_compose = templatefile("${path.module}/nginx/docker-compose.tpl", {
+  docker_compose_fe = templatefile("${path.module}/nginx/docker-compose.tpl", {
     image          = var.startup_fe_image
     container_name = var.startup_fe_container_name
     port           = var.startup_fe_nextjs_port
   })
 
-  nginx_conf = templatefile("${path.module}/nginx/default.conf.tpl", {
+  nginx_conf_fe = templatefile("${path.module}/nginx/default.conf.tpl", {
     domain = var.dns_record_name
+    port   = 3000
+  })
+
+  docker_compose_be = templatefile("${path.module}/nginx/docker-compose.tpl", {
+    image          = var.startup_be_image
+    container_name = var.startup_be_container_name
+    port           = var.startup_be_springboot_port
+  })
+
+  nginx_conf_be = templatefile("${path.module}/nginx/default.conf.tpl", {
+    domain = "be.${var.dns_record_name}"
+    port   = 8080
   })
 
   startup_script_fe = templatefile("${path.module}/fe_startup.sh.tpl", {
     domain         = var.dns_record_name
-    docker_compose = local.docker_compose
-    nginx_conf     = local.nginx_conf
+    docker_compose = local.docker_compose_fe
+    nginx_conf     = local.nginx_conf_fe
   })
 
   startup_script_be = templatefile("${path.module}/be_startup.sh.tpl", {
+    domain         = "be.${var.dns_record_name}"
+    docker_compose = local.docker_compose_be
+    nginx_conf     = local.nginx_conf_be
     port           = var.startup_be_springboot_port
     secret_name    = var.startup_be_secret_name
-    container_name = var.startup_be_container_name
+    # container_name = var.startup_be_container_name
     image          = var.startup_be_image
+
   })
 
   startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
@@ -57,7 +73,7 @@ locals {
 
 
 # Next.js GCE 인스턴스
-resource "google_compute_instance" "fe_instance" {
+resource "google_compute_instance" "fe" {
   project      = var.project_id_dev
   name         = var.gce_name_fe
   machine_type = var.gce_machine_type_fe
@@ -90,7 +106,7 @@ resource "google_compute_instance" "fe_instance" {
 
 
 # Spring Boot GCE 인스턴스
-resource "google_compute_instance" "be_instance" {
+resource "google_compute_instance" "be" {
   project      = var.project_id_dev
   name         = var.gce_name_be
   machine_type = var.gce_machine_type_be
@@ -122,7 +138,7 @@ resource "google_compute_instance" "be_instance" {
 }
 
 # MySQL 및 Redis GCE 인스턴스 (하나의 인스턴스에서 실행)
-resource "google_compute_instance" "db_instance" {
+resource "google_compute_instance" "db" {
   project      = var.project_id_dev
   name         = var.gce_name_db
   machine_type = var.gce_machine_type_db
@@ -160,7 +176,7 @@ resource "google_dns_record_set" "nextjs_dns_record" {
   name         = "${var.dns_record_name}."
   type         = "A"
   ttl          = 18000
-  rrdatas      = [google_compute_instance.fe_instance.network_interface[0].access_config[0].nat_ip]
+  rrdatas      = [google_compute_instance.fe.network_interface[0].access_config[0].nat_ip]
 }
 
 # Cloud DNS A 레코드 추가 (Spring Boot BE 인스턴스 외부 IP를 가리키도록)
@@ -170,6 +186,6 @@ resource "google_dns_record_set" "springboot_dns_record" {
   name         = "be.${var.dns_record_name}." # 예: be.dev-leafresh.app..
   type         = "A"
   ttl          = 18000
-  rrdatas      = [google_compute_instance.be_instance.network_interface[0].access_config[0].nat_ip]
+  rrdatas      = [google_compute_instance.be.network_interface[0].access_config[0].nat_ip]
 }
 

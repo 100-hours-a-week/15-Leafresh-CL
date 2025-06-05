@@ -1,7 +1,7 @@
 # modules/network/main.tf
 
 # Subnet 정의
-resource "google_compute_subnetwork" "public_subnet_fe" {
+resource "google_compute_subnetwork" "public_fe" {
   project       = var.project_id_dev
   name          = var.subnet_name_fe
   ip_cidr_range = var.subnet_cidr_fe
@@ -9,7 +9,7 @@ resource "google_compute_subnetwork" "public_subnet_fe" {
   network       = var.vpc_self_link
 }
 
-resource "google_compute_subnetwork" "private_subnet_be" {
+resource "google_compute_subnetwork" "public_be" {
   project       = var.project_id_dev
   name          = var.subnet_name_be
   ip_cidr_range = var.subnet_cidr_be
@@ -17,7 +17,7 @@ resource "google_compute_subnetwork" "private_subnet_be" {
   network       = var.vpc_self_link
 }
 
-resource "google_compute_subnetwork" "private_subnet_db" {
+resource "google_compute_subnetwork" "public_db" {
   project       = var.project_id_dev
   name          = var.subnet_name_db
   ip_cidr_range = var.subnet_cidr_db

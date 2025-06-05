@@ -2,17 +2,17 @@
 
 output "subnet_fe_self_link" {
   description = "Next.js Public Subnet의 Self Link"
-  value       = google_compute_subnetwork.public_subnet_fe.self_link
+  value       = google_compute_subnetwork.public_fe.self_link
 }
 
 output "subnet_be_self_link" {
   description = "Spring Boot Private Subnet의 Self Link"
-  value       = google_compute_subnetwork.private_subnet_be.self_link
+  value       = google_compute_subnetwork.public_be.self_link
 }
 
 output "subnet_db_self_link" {
   description = "MySQL/Redis Private Subnet의 Self Link"
-  value       = google_compute_subnetwork.private_subnet_db.self_link
+  value       = google_compute_subnetwork.public_db.self_link
 }
 
 # output "nat_gateway_ip" {

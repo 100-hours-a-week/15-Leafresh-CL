@@ -46,7 +46,7 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: leafresh-mysql
+    container_name: mysql-develop
     restart: always
     env_file:
       - /home/ubuntu/.env
@@ -60,7 +60,7 @@ services:
 
   redis:
     image: redislabs/rebloom:2.8.1
-    container_name: leafresh-redis
+    container_name: redis-develop
     restart: always
     ports:
       - "${redis_port}:${redis_port}"

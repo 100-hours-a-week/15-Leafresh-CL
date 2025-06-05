@@ -9,8 +9,8 @@ server {
     # ssl_ciphers HIGH:!aNULL:!MD5;
 
     location / {
-        proxy_pass http://app:3000;
-        # proxy_pass http://localhost:3000;
+        proxy_pass http://app:${port};
+        # proxy_pass http://localhost:${port};
         proxy_http_version 1.1;
         proxy_set_header Host \u0024host;
         proxy_set_header X-Real-IP \u0024remote_addr;

@@ -1,6 +1,6 @@
 # modules/pubsub/main.tf
 
-resource "google_pubsub_topic" "be_topics" {
+resource "google_pubsub_topic" "be" {
   for_each = var.pubsub_topic_names
 
   name    = each.key
@@ -14,11 +14,11 @@ resource "google_pubsub_topic" "be_topics" {
   }
 }
 
-resource "google_pubsub_subscription" "be_subscriptions" {
+resource "google_pubsub_subscription" "be" {
   for_each = var.pubsub_topic_names
 
   name  = each.value.subscription_name
-  topic = google_pubsub_topic.be_topics[each.key].id
+  topic = google_pubsub_topic.be[each.key].id
   project = var.project_id_dev
 
   ack_deadline_seconds = 20
@@ -31,6 +31,6 @@ resource "google_pubsub_subscription" "be_subscriptions" {
   }
 
   depends_on = [
-    google_pubsub_topic.be_topics
+    google_pubsub_topic.be
   ]
 }
