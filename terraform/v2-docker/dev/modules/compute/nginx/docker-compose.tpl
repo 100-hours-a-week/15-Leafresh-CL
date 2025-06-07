@@ -4,7 +4,7 @@ services:
     container_name: ${container_name}
     restart: always
     expose:
-      - "${port}"
+      - "${port}"${env_file}
 
   nginx:
     image: nginx:alpine

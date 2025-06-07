@@ -19,6 +19,9 @@ locals {
   labels_db = merge(local.common_labels, {
     role = "db"
   })
+
+  env_be    = true
+  env_path  = "./app/.env"
 }
 
 
@@ -28,6 +31,7 @@ locals {
     image          = var.startup_fe_image
     container_name = var.startup_fe_container_name
     port           = var.startup_fe_nextjs_port
+    env_file       = ""
   })
 
   nginx_conf_fe = templatefile("${path.module}/nginx/default.conf.tpl", {
@@ -39,6 +43,7 @@ locals {
     image          = var.startup_be_image
     container_name = var.startup_be_container_name
     port           = var.startup_be_springboot_port
+    env_file       = local.env_be ? "\n    env_file:\n      - ${local.env_path}" : ""
   })
 
   nginx_conf_be = templatefile("${path.module}/nginx/default.conf.tpl", {
