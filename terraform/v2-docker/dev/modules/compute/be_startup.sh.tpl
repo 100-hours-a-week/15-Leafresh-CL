@@ -34,18 +34,18 @@ sudo docker run --rm -p 80:80 \
   -m admin@${domain} -d ${domain}
 
 # Compose 및 Nginx 설정 준비
-sudo mkdir -p /opt/frontend/nginx
+sudo mkdir -p /opt/backend/nginx
 
 # docker-compose.yml
-cat > /opt/frontend/docker-compose.yml <<EOF
+cat > /opt/backend/docker-compose.yml <<EOF
 ${docker_compose}
 EOF
 
 # nginx/default.conf
-cat > /opt/frontend/nginx/default.conf <<EOF
+cat > /opt/backend/nginx/default.conf <<EOF
 ${nginx_conf}
 EOF
 
 # 서비스 실행
-cd /opt/frontend
+cd /opt/backend
 sudo docker compose up -d
