@@ -2,15 +2,16 @@ name: Backend CI/CD
  
 on:
   push:
-    branches: [ "develop", "main" ]
+    tags:
+      - 'v*-dev'
+      - 'v*'
   pull_request:
-    branches: [ "develop", "main" ]
-    types: [opened, synchronize, reopened, closed]
-
+    branches: ["develop", "main"]
+    
 jobs:
   sync-env-to-GSM:
     name: Upload .env to Secret Manager
-    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +23,6 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
           credentials_json: ${{ secrets.GCP_SA_KEY_DEV_JSON }}
-          export_default_credentials: true
 
       - name: Set GCP Secret Name based on branch
         id: set-env-vars
@@ -30,12 +30,12 @@ jobs:
           if [[ "${GITHUB_REF##*/}" == "main" ]]; then
             echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_PROD }}" >> $GITHUB_ENV
             echo "SECRET_NAME=env-be-prod" >> $GITHUB_ENV
-            echo "${{ secrets.ENV_DOCKER_PROD }}" > .env
+            echo "${{ secrets.ENV_BE_PROD }}" > .env
             echo "Using A project and production .env"
           else
             echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID_DEV }}" >> $GITHUB_ENV
             echo "SECRET_NAME=env-be-dev" >> $GITHUB_ENV
-            echo "${{ secrets.ENV_DOCKER_LOCAL }}" > .env
+            echo "${{ secrets.ENV_BE_DEV }}" > .env
             echo "Using B project and development .env"
           fi
 
@@ -138,7 +138,7 @@ jobs:
           java-version: 21
 
       - name: Create .env file from GitHub Secret
-        run: echo "${{ secrets.ENV_DOCKER_LOCAL }}" > .env
+        run: echo "${{ secrets.ENV_BE_DEV }}" > .env
 
       - name: Export environment variables
         run: |
@@ -154,7 +154,7 @@ jobs:
           grep -v '^#' .env | xargs -L1 echo export >> $GITHUB_ENV
       
       - name: Create GCP credentials file
-        run: echo "${{ secrets.GCP_SA_KEY_DEV_BASE64 }}" | base64 -d > /home/runner/gcp-sa-key.json
+        run: echo "${{ secrets.GCP_SA_KEY_DEV_BASE64 }}" | base64 -d > /home/runner/leafresh2-428172295b3d.json
 
       - name: Build Spring Boot App
         run: ./gradlew bootJar
@@ -201,14 +201,10 @@ jobs:
 
   build-dev:                                    # develop 브랜치에서 Docker 이미지 빌드 및 푸시
     name: Build and Push Docker (dev)
-    needs: unit-test
-    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    needs: [unit-test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3              # 소스코드 체크아웃
-
-      - name: Build JAR with Gradle            # JAR 빌드
-        run: ./gradlew build
 
       - name: Set up Docker Buildx             # Docker Buildx 설정
         uses: docker/setup-buildx-action@v3
@@ -227,24 +223,20 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/backend-develop:latest
+          tags: |
+            jchanho99/backend-develop:latest
           cache-from: type=gha,scope=build-backend-develop
           cache-to: type=gha,mode=max,scope=build-backend-develop
 
   build-prod:                                   # main 브랜치에서 Docker 이미지 빌드 및 푸시
     name: Build and Push Docker (prod)
-    needs: integration-test
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    needs: [integration-test]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./
     steps:
       - uses: actions/checkout@v3              # 코드 체크아웃
-      
-      - name: Get short commit SHA
-        id: get_sha
-        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx             # Docker Buildx 설정
         uses: docker/setup-buildx-action@v3
@@ -257,65 +249,80 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Build and Push Docker Image      # Docker 이미지 빌드 및 푸시
+      - name: Build and Push Docker Image to Docker Hub     # Docker 이미지 빌드 및 푸시
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/backend-prod:${{ env.SHORT_SHA }}
+          tags: |
+            jchanho99/backend-prod:latest
           cache-from: type=gha,scope=build-backend-prod
           cache-to: type=gha,mode=max,scope=build-backend-prod
 
 
   deploy-dev:
     name: BE Docker 배포 (Develop)
-    needs: [build-dev]
-    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    if: startsWith(github.ref, 'refs/tags/v') && endsWith(github.ref, '-dev')
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.set-status.outputs.status }}
     steps:
-      - name: Setup SSH Key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+      - uses: actions/checkout@v3              # 소스코드 체크아웃
 
-      - name: Upload GCP json key to BE Server
+      - name: Extract tag name
+        id: tag
         run: |
-          echo "${{ secrets.GCP_SA_KEY_DEV_BASE64 }}" | base64 -d > gcp-key.json
-          scp -o StrictHostKeyChecking=no gcp-key.json ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:/home/ubuntu/gcp-key.json
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
 
       - name: Deploy Backend (Develop) via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST_DEV }}
-          username: ${{ secrets.SSH_USER_DEV }}
-          key: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: SHORT_SHA
           script: |
             set -e
             echo "GCP 인증 및 Docker 로그인"
-            gcloud auth activate-service-account --key-file=/home/ubuntu/gcp-key.json
-            gcloud auth configure-docker
+            echo '${{ secrets.GCP_SA_KEY_GCS_BASE64 }}' | base64 -d > ~/leafresh-gcs.json
+            sudo mv ~/leafresh-gcs.json /home/ubuntu/backend/app/leafresh-gcs.json
+            sudo chown ubuntu:ubuntu /home/ubuntu/backend/app/leafresh-gcs.json
+            sudo chmod 600 /home/ubuntu/backend/app/leafresh-gcs.json
 
             echo "Secret Manager에서 .env 기져오기"
-            mkdir -p /home/ubuntu/app
+            # .env를 홈 디렉토리에 우선 저장
             if ! gcloud secrets versions access latest \
               --secret="env-be-dev" \
-              --project="leafresh-dev2" > /home/ubuntu/app/.env; then
+              --project="leafresh-dev2" > ~/env-be-dev.tmp; then
               echo ".env 파일 다운로드 실패"
               exit 1
             fi
-
+            
+            # 권한 수정 후 앱 디렉토리로 이동
+            sudo mv ~/env-be-dev.tmp /home/ubuntu/backend/app/.env
+            sudo chown ubuntu:ubuntu /home/ubuntu/backend/app/.env
+            sudo chmod 600 /home/ubuntu/backend/app/.env
+            
             echo "[DEV] 환경 배포 중"
-            sudo docker stop backend-develop || true
-            sudo docker rm backend-develop || true
-            sudo docker pull jchanho99/backend-dev:latest
-            sudo docker run -d --name backend-develop \
-              --env-file /home/ubuntu/app/.env \
-              -p 8080:8080 \
-              --restart always \
-              jchanho99/backend-dev:latest
+            cd /home/ubuntu/backend
+            sudo docker compose down --rmi all
+            sudo docker compose pull
+            sudo docker compose up -d
+            sudo docker compose ps
+
+      - name: Upload tag-versioned image to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Tag and Push Docker Image (tag = ${{ env.TAG_NAME }})
+        run: |
+          docker pull jchanho99/backend-develop:latest
+          docker tag jchanho99/backend-develop:latest jchanho99/backend-develop:${TAG_NAME}
+          docker push jchanho99/backend-develop:${TAG_NAME}
       
       - name: Set Status (Dev)
         id: set-status
@@ -328,8 +335,8 @@ jobs:
 
   deploy-prod:
     name: BE Docker 배포 (Prod)
-    needs: [build-prod]
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    # needs: [build-prod]
+    if: startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-dev')
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.set-status.outputs.status }}
@@ -342,14 +349,14 @@ jobs:
       - name: Upload GCP json key to BE Server
         run: |
           echo "${{ secrets.GCP_SA_KEY_PROD_BASE64 }}" | base64 -d > gcp-key.json
-          scp -o StrictHostKeyChecking=no gcp-key.json ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:/home/ubuntu/gcp-key.json
+          scp -o StrictHostKeyChecking=no gcp-key.json ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST_PROD }}:/home/ubuntu/gcp-key.json
 
       - name: Deploy Backend (Prod) via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST_PROD }}
-          username: ${{ secrets.SSH_USER_PROD }}
-          key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
             echo "GCP 인증 및 Docker 로그인"
@@ -417,7 +424,8 @@ jobs:
   notify:
     name: Discord Notification
     needs: [deploy-dev, deploy-prod]
-    if: always()
+    if: |
+      (needs.deploy-dev.result != 'skipped') || (needs.deploy-prod.result != 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Send Discord Message
