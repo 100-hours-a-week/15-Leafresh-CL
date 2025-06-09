@@ -2,13 +2,16 @@ name: Frontend CI/CD
 
 on:
   pull_request:
-    branches: [ "develop", "main" ]
+    branches: ['develop', 'main']
   push:
-    tags: ['v*-dev', 'v*' ]
+    tags:
+      - 'v*-dev'
+      - 'v*'
 
 jobs:
   setup:
     name: Setup and Install Dependencies
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       pnpm_cache_hit: ${{ steps.cache-pnpm.outputs.cache-hit }}
@@ -55,6 +58,10 @@ jobs:
         run: echo "Using cached pnpm modules"
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+      - name: Delete Duplicates
+        run: |
+          pnpm dedupe
+          pnpm install
       - name: Run Lint
         run: pnpm run lint
       - name: Run Unit Test
@@ -71,7 +78,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 필요에 따라 여러 설정으로 확장 (예: 다른 브라우저)
         browser: [chromium]
     steps:
       - uses: actions/checkout@v3
@@ -94,73 +100,35 @@ jobs:
         run: pnpm run start &
       - name: Wait for App to Start (Health Check)
         run: |
-            TIMEOUT=30
-            sleep $TIMEOUT;
-            # for i in $(seq 1 $TIMEOUT); do
-            #   if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 >/dev/null 2>&1 && [ "$status" -eq "200" ]; then
-            #     echo "Application is ready"
-            #     exit 0
-            #   fi
-            #   echo "Waiting for application... ($i/$TIMEOUT)"
-            #   sleep 1
-            # done
-            # echo "Application did not start within the timeout"
-            # exit 1
+          TIMEOUT=30
+          sleep $TIMEOUT;
+          # for i in $(seq 1 $TIMEOUT); do
+          #   if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 >/dev/null 2>&1 && [ "$status" -eq "200" ]; then
+          #     echo "Application is ready"
+          #     exit 0
+          #   fi
+          #   echo "Waiting for application... ($i/$TIMEOUT)"
+          #   sleep 1
+          # done
+          # echo "Application did not start within the timeout"
+          # exit 1
       - name: Run Playwright Tests (${{ matrix.browser }})
         run: pnpm exec playwright test --project=chromium
         env:
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
 
-  # build:
-  #   name: Build & Push Docker Image
-  #   if: |
-  #     (github.base_ref == 'develop' && needs.lint-and-unit-test.result == 'success') ||
-  #     (github.base_ref == 'main' && needs.integration-test.result == 'success')
-  #   needs: [lint-and-unit-test, integration-test]
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Determine Docker Tag
-  #       id: set-tag
-  #       run: |
-  #         if [[ "${{ github.ref_name }}" == "develop" ]]; then
-  #           echo "tag=jchanho99/frontend-dev:latest" >> $GITHUB_OUTPUT
-  #         elif [[ "${{ github.ref_name }}" == "main" ]]; then
-  #           echo "tag=jchanho99/frontend-prod:latest" >> $GITHUB_OUTPUT
-  #         else
-  #           echo "tag=jchanho99/frontend-unknown:latest" >> $GITHUB_OUTPUT
-  #         fi
-
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_TOKEN }}
-
-  #     - name: Build and Push Docker Image
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: .
-  #         file: ./Dockerfile
-  #         push: true
-  #         tags: ${{ steps.set-tag.outputs.tag }}
-
   build-dev:
     name: Build and Push Docker (dev)
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
     needs: [lint-and-unit-test]
-    if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-dev') 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Extract version from tag
-        id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Login to Docker Hub
+      - name: Set short commit SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Docker Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -172,97 +140,94 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jchanho99/frontend-develop:${{ env.VERSION }}
+          tags: jchanho99/frontend-develop:${{ env.SHORT_SHA }}
 
   build-prod:
     name: Build and Push Docker (prod)
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     needs: [integration-test]
-    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-dev') 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Extract version from tag
-        id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-      
-      - name: Login to Docker Hub
+
+      - name: Set short commit SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Docker Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            jchanho99/frontend-prod:${{ env.VERSION }}
-            jchanho99/frontend-prod:latest
+          tags: jchanho99/frontend-prod:${{ env.SHORT_SHA }}
 
   deploy-dev:
     name: Deploy to Dev Server
-    if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-dev')
-    needs: [build-dev]
+    if: startsWith(github.ref, 'refs/tags/v') && endsWith(github.ref, '-dev')
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.set-status.outputs.status }}
     steps:
-      - name: Extract version from tag
-        id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Checkout for git access
+        uses: actions/checkout@v3
+
+      - name: Extract commit SHA from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          COMMIT_SHA=$(git rev-list -n 1 "$TAG")
+          SHORT_SHA=${COMMIT_SHA:0:7}
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
 
       - name: Deploy to Dev
-        id: deploy-step
-        uses: appleboy/ssh-action@v1.0.3 # 특정 버전 사용 권장
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.LEAFRESH_DEV_HOST }}
-          username: ${{ secrets.LEAFRESH_DEV_SSH_USER }} # 개발 서버 SSH 사용자 이름 Secret
-          key: ${{ secrets.LEAFRESH_DEV_SSH }}
-          port: ${{ secrets.LEAFRESH_DEV_SSH_PORT || 22 }} # 개발 서버 SSH 포트 Secret (없으면 22)
+          host: ${{ secrets.SSH_HOST_DEV }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
-            set -e # 오류 발생 시 즉시 스크립트 중단
-            IMAGE="jchanho99/frontend-develop:${VERSION}"
+            IMAGE="jchanho99/frontend-develop:${SHORT_SHA}"
             cd /opt/frontend/
-            echo "PWD: $(pwd)"
-            sudo docker compose down
-            sudo docker rm frontend-develop || true # frontend-develop 컨테이너 삭제 (오류 무시)
+            echo "Pulling Docker image: $IMAGE"
+            sudo docker stop frontend-develop || true
+            sudo docker rm frontend-develop || true
             sudo docker pull "$IMAGE"
-            sudo docker compose up -d
-            
-      - name: Set Status (Dev)
-        id: set-status
-        if: success()
-        run: echo "status=success" >> "$GITHUB_OUTPUT"
-
-      - name: Set Status (Dev Failure)
-        if: failure() && steps.deploy-step.outcome == 'failure' # deploy-step이 실패했을 때만
-        run: echo "status=failure" >> "$GITHUB_OUTPUT"
+            sudo docker run -d --name frontend-develop \
+              --network frontend_default \
+              -p 3000:3000 \
+              --restart always \
+              "$IMAGE"
 
   deploy-prod:
     name: Deploy to Prod Server (Blue-Green)
-    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-dev')
-    needs: [build-prod]
+    if: startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-dev')
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.set-status.outputs.status }}
     steps:
-      - name: Extract version from tag
-        id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Checkout for git access
+        uses: actions/checkout@v3
+
+      - name: Extract commit SHA from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          COMMIT_SHA=$(git rev-list -n 1 "$TAG")
+          SHORT_SHA=${COMMIT_SHA:0:7}
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
 
       - name: Deploy to Prod
-        id: deploy-step
-        uses: appleboy/ssh-action@v1.0.3 # 특정 버전 사용 권장
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.LEAFRESH_PROD_HOST }}
-          username: ${{ secrets.LEAFRESH_PROD_SSH_USER }} # 프로덕션 서버 SSH 사용자 이름 Secret
-          key: ${{ secrets.FE_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.LEAFRESH_PROD_SSH_PORT || 22 }} # 프로덕션 서버 SSH 포트 Secret (없으면 22)
+          host: ${{ secrets.SSH_HOST_PROD }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             set -e # 오류 발생 시 즉시 스크립트 중단
+            VERSION="${{ github.ref }}"             # ex: refs/tags/v2.0.6
+            VERSION="${VERSION#refs/tags/}"         # remove prefix
             IMAGE="jchanho99/frontend-prod:${{ env.VERSION }}"
             HEALTH_CHECK_URL="http://localhost:3001" # 헬스 체크 URL
 
@@ -280,26 +245,18 @@ jobs:
 
             echo "🔵 Current active environment: $CURRENT"
             echo "🟢 Next environment to deploy: $NEXT"
-            
-            # 참고: 아래 docker compose up -d 명령은 /opt/frontend/docker-compose.yml 파일을 사용합니다.
-            # 이 docker-compose.yml 파일이 $NEXT 환경 (예: frontend-green 서비스)을 
-            # 올바르게 시작하거나 업데이트하도록 구성되어 있어야 합니다.
-            # (예: docker-compose.yml 내부에 blue, green 서비스가 모두 정의되어 있거나, 
-            # 환경변수를 통해 타겟 서비스의 이미지가 동적으로 설정되는 등)
+
             echo "🚀 Bringing up $NEXT environment (frontend-$NEXT)..."
             # 만약 docker-compose.yml에서 $NEXT에 해당하는 특정 서비스를 지정해야 한다면,
             # 예: sudo docker compose up -d service-$NEXT
-            # 현재는 전체 compose up을 수행합니다.
             sudo docker compose up -d # 이 명령이 frontend-$NEXT 컨테이너를 시작/업데이트해야 함
 
             echo "🩺 Performing health check for $NEXT on $HEALTH_CHECK_URL..."
             HEALTH_CHECK_PASSED=false
             for i in {1..60}; do
-              # 포트 리스닝 확인 (nc 명령어가 서버에 설치되어 있어야 함)
               if nc -z localhost 3001 2>/dev/null; then
                 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_CHECK_URL")
                 if [ "$HTTP_CODE" -eq 200 ]; then
-                  # 원본 스크립트의 <title> 태그 확인 로직
                   CONTENT_STATUS=$(curl -s "$HEALTH_CHECK_URL" | grep "<title>")
                   if [ ! -z "$CONTENT_STATUS" ]; then
                     echo "✅ Health check passed for $NEXT on attempt $i (HTTP $HTTP_CODE with <title>)."
@@ -317,7 +274,6 @@ jobs:
               echo "💣 Rolling back: Attempting to stop and remove $NEXT environment (frontend-$NEXT)..."
               sudo docker stop "frontend-$NEXT" || true
               sudo docker rm "frontend-$NEXT" || true
-              # 필요시 이전 $CURRENT 환경을 명시적으로 다시 활성화하는 로직 추가 가능
               exit 1
             fi
 
@@ -327,17 +283,11 @@ jobs:
             echo "🛑 Stopping and removing $CURRENT environment (frontend-$CURRENT)..."
             sudo docker stop "frontend-$CURRENT" || true
             sudo docker rm "frontend-$CURRENT" || true
-            
-            # --- 원본 스크립트의 로직 유지 ---
-            # 성공적으로 헬스체크된 $NEXT 환경을 중지, 삭제 후 다시 docker compose up 하는 부분입니다.
-            # 특정 이유가 있을 수 있으므로 원본 로직을 유지합니다.
-            # 일반적인 Blue/Green에서는 이 부분이 필요 없을 수 있습니다 (이미 $NEXT는 잘 실행 중).
-            # 대신, 이 시점에서 리버스 프록시 설정을 변경하여 트래픽을 $NEXT로 전환합니다.
+
             echo "⚠️ Force restarting $NEXT environment as per original script logic (stop, rm, up)..."
             sudo docker stop "frontend-$NEXT" || true
             sudo docker rm "frontend-$NEXT" || true
             sudo docker compose up -d # $NEXT 환경을 다시 시작
-            # --- 원본 스크립트 로직 끝 ---
 
             echo "$NEXT" > /opt/frontend-current
             echo "🎉 Prod Blue-Green deployment to $NEXT complete. $NEXT is now active."
@@ -350,11 +300,12 @@ jobs:
       - name: Set Status (Prod Failure)
         if: failure() && steps.deploy-step.outcome == 'failure' # deploy-step이 실패했을 때만
         run: echo "status=failure" >> "$GITHUB_OUTPUT"
-  
+
   notify:
     name: Discord Notification
-    needs: [deploy-dev, deploy-prod]
-    if: always()
+    needs: [deploy-dev, deploy-prod] # 명시적으로 종속성 추가
+    if: |
+      (needs.deploy-dev.result != 'skipped') || (needs.deploy-prod.result != 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Send Discord Message
