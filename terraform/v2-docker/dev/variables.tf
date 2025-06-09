@@ -236,6 +236,12 @@ variable "startup_be_secret_name" {
   sensitive   = true
 }
 
+variable "startup_be_secret_name_json" {
+  description = "BE 인스턴스 json 이름"
+  type        = string
+  sensitive   = true
+}
+
 variable "startup_be_container_name" {
   description = "BE 인스턴스 도커 컨테이너 이름 설정"
   type        = string

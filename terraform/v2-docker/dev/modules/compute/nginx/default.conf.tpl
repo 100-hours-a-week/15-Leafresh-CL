@@ -10,12 +10,11 @@ server {
 
     location / {
         proxy_pass http://app:${port};
-        # proxy_pass http://localhost:${port};
         proxy_http_version 1.1;
-        proxy_set_header Host \u0024host;
-        proxy_set_header X-Real-IP \u0024remote_addr;
-        proxy_set_header X-Forwarded-For \u0024proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \u0024scheme;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
 
@@ -24,5 +23,5 @@ server {
     server_name ${domain};
 
     # HTTP 요청을 HTTPS로 리디렉션
-    return 301 https://$host$request_uri;
+    return 301 https://\$host\$request_uri;
 }

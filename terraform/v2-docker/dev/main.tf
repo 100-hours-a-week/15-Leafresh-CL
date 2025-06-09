@@ -93,6 +93,7 @@ module "compute" {
   startup_be_image               = var.startup_be_image
   startup_be_container_name      = var.startup_be_container_name
   startup_be_secret_name         = var.startup_be_secret_name
+  startup_be_secret_name_json    = var.startup_be_secret_name_json
   startup_be_springboot_port     = var.startup_be_springboot_port
   startup_db_mysql_database_name = var.startup_db_mysql_database_name
   startup_db_mysql_root_password = var.startup_db_mysql_root_password

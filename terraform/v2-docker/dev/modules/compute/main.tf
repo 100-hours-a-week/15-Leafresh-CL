@@ -22,6 +22,17 @@ locals {
 
   env_be    = true
   env_path  = "./app/.env"
+
+  gcp_key_enabled   = true
+  gcp_key_path      = "./app/leafresh-gcs.json"
+
+  volumes_block_be = local.gcp_key_enabled ? (
+    <<EOT
+
+    volumes:
+      - ${local.gcp_key_path}:/app/leafresh-gcs.json:ro
+  EOT
+  ) : ""
 }
 
 
@@ -32,6 +43,7 @@ locals {
     container_name = var.startup_fe_container_name
     port           = var.startup_fe_nextjs_port
     env_file       = ""
+    volumes_block  = ""
   })
 
   nginx_conf_fe = templatefile("${path.module}/nginx/default.conf.tpl", {
@@ -44,6 +56,7 @@ locals {
     container_name = var.startup_be_container_name
     port           = var.startup_be_springboot_port
     env_file       = local.env_be ? "\n    env_file:\n      - ${local.env_path}" : ""
+    volumes_block  = local.volumes_block_be
   })
 
   nginx_conf_be = templatefile("${path.module}/nginx/default.conf.tpl", {
@@ -63,6 +76,7 @@ locals {
     nginx_conf     = local.nginx_conf_be
     port           = var.startup_be_springboot_port
     secret_name    = var.startup_be_secret_name
+    secret_name_json = var.startup_be_secret_name_json
     # container_name = var.startup_be_container_name
     image          = var.startup_be_image
 

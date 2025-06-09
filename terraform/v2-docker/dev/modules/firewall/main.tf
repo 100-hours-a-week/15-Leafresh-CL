@@ -9,7 +9,7 @@ resource "google_compute_firewall" "allow_nextjs_external" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443"]
+    ports    = ["22", "80", "443"]
   }
   allow {
     protocol = "icmp"
@@ -18,7 +18,7 @@ resource "google_compute_firewall" "allow_nextjs_external" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-# SpringBoot 인스턴스 외부 접근 허용 (80, 443)
+# SpringBoot 인스턴스 외부 접근 허용 (80, 443, 22)
 resource "google_compute_firewall" "allow_springboot_external" {
   project = var.project_id_dev
   name    = "leafresh-firewall-be-to-external"
@@ -27,7 +27,7 @@ resource "google_compute_firewall" "allow_springboot_external" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443"]
+    ports    = ["22", "80", "443"]
   }
   allow {
     protocol = "icmp"
