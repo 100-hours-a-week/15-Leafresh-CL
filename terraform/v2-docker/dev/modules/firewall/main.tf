@@ -9,7 +9,7 @@ resource "google_compute_firewall" "allow_nextjs_external" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443", "22"]
+    ports    = ["80", "443"]
   }
   allow {
     protocol = "icmp"
@@ -17,6 +17,25 @@ resource "google_compute_firewall" "allow_nextjs_external" {
 
   source_ranges = ["0.0.0.0/0"]
 }
+
+# SpringBoot 인스턴스 외부 접근 허용 (80, 443)
+resource "google_compute_firewall" "allow_springboot_external" {
+  project = var.project_id_dev
+  name    = "leafresh-firewall-be-to-external"
+  network = var.vpc_name
+  target_tags = [var.tag_be]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "443"]
+  }
+  allow {
+    protocol = "icmp"
+  }
+  
+  source_ranges = ["0.0.0.0/0"]
+}
+
 
 # Next.js -> Spring Boot 통신 허용
 resource "google_compute_firewall" "allow_nextjs_to_springboot" {
@@ -28,14 +47,14 @@ resource "google_compute_firewall" "allow_nextjs_to_springboot" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8080"] # Spring Boot 포트 (예시)
+    ports    = ["8080"]
   }
   allow {
     protocol = "icmp"
   }
 }
 
-# Spring Boot -> Next.js 통신 허용 (Next.js가 응답할 때)
+# Spring Boot -> Next.js 통신 허용 (Next.js 응답)
 resource "google_compute_firewall" "allow_springboot_to_nextjs" {
   project     = var.project_id_dev
   name        = "leafresh-firewall-spring-to-nextjs"
@@ -70,7 +89,7 @@ resource "google_compute_firewall" "allow_springboot_to_db" {
   }
 }
 
-# MySQL/Redis -> Spring Boot 통신 허용 (DB가 응답할 때)
+# MySQL/Redis -> Spring Boot 통신 허용 (DB 응답)
 resource "google_compute_firewall" "allow_db_to_springboot" {
   project     = var.project_id_dev
   name        = "leafresh-firewall-db-to-spring"
@@ -80,7 +99,7 @@ resource "google_compute_firewall" "allow_db_to_springboot" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8080"] # Spring Boot 포트 (예시)
+    ports    = ["8080"]
   }
   allow {
     protocol = "icmp"
@@ -98,7 +117,7 @@ resource "google_compute_firewall" "allow_springboot_to_gpu1" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8000"] # 필요한 포트로 제한
+    ports    = ["8000"]
   }
   allow {
     protocol = "icmp"
@@ -114,7 +133,7 @@ resource "google_compute_firewall" "allow_gpu1_to_springboot" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8080"] # 필요한 포트로 제한
+    ports    = ["8080"]
   }
   allow {
     protocol = "icmp"
@@ -130,7 +149,7 @@ resource "google_compute_firewall" "allow_springboot_to_gpu2" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8000"] # 필요한 포트로 제한
+    ports    = ["8000"]
   }
   allow {
     protocol = "icmp"
@@ -146,7 +165,7 @@ resource "google_compute_firewall" "allow_gpu2_to_springboot" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8080"] # 필요한 포트로 제한
+    ports    = ["8080"]
   }
   allow {
     protocol = "icmp"
@@ -158,7 +177,6 @@ resource "google_compute_firewall" "allow_iap_ssh" {
   project = var.project_id_dev
   name    = "allow-iap-ssh"
   network = var.vpc_name
-  # Spring Boot 및 DB 인스턴스에만 IAP 적용
   target_tags = [var.tag_fe, var.tag_be, var.tag_db]
 
   allow {
@@ -171,18 +189,3 @@ resource "google_compute_firewall" "allow_iap_ssh" {
   description   = "Allow SSH access through IAP to private instances."
 }
 
-resource "google_compute_firewall" "allow_ssh" {
-  project = var.project_id_dev
-  name    = "allow-ssh"
-  network = var.vpc_name
-
-  target_tags = [var.tag_fe, var.tag_be, var.tag_db]
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
-
-  source_ranges = ["0.0.0.0/0"] # 또는 본인 IP만: ["203.0.113.100/32"]
-  description   = "Allow SSH access from anywhere (not using IAP)."
-}

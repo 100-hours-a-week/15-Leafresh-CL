@@ -19,6 +19,7 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 # Secret Manager에서 .env 불러오기
 sudo mkdir -p /home/ubuntu/backend/app
 gcloud secrets versions access latest --secret="${secret_name}" > /home/ubuntu/backend/app/.env
+sudo chown ubuntu:ubuntu /home/ubuntu/backend/app/.env
 
 # 도메인 변수 정의
 DOMAIN="${domain}"
@@ -47,6 +48,6 @@ ${nginx_conf}
 EOF
 
 # 서비스 실행
-cd /opt/backend
+cd /home/ubuntu/backend
 sudo docker compose pull
 sudo docker compose up -d
