@@ -32,7 +32,7 @@ sudo docker run --rm -p 80:80 \
   -v "/etc/letsencrypt:/etc/letsencrypt" \
   -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
   certbot/certbot certonly --standalone --non-interactive --agree-tos \
-  -m admin@${domain} -d ${domain}
+  -d ${domain}
 
 # Compose 및 Nginx 설정 준비
 sudo mkdir -p /home/ubuntu/frontend/nginx
@@ -50,3 +50,9 @@ EOF
 # 서비스 실행
 cd /home/ubuntu/frontend
 sudo docker compose up -d
+
+# gcs 마운트
+mkdir /home/ubuntu/logs
+gcsfuse leafresh-gcs-logs /home/ubuntu/logs
+
+nohup sudo docker logs -f ${container_name} > /home/ubuntu/logs/${container_name}_$(date +%Y%m%d).log &

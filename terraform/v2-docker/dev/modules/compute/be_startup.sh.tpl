@@ -58,3 +58,9 @@ EOF
 cd /home/ubuntu/backend
 sudo docker compose pull
 sudo docker compose up -d
+
+# gcs 마운트
+mkdir /home/ubuntu/logs
+gcsfuse leafresh-gcs-logs /home/ubuntu/logs
+
+nohup sudo docker logs -f ${container_name} > /home/ubuntu/logs/${container_name}_$(date +%Y%m%d).log &

@@ -46,7 +46,7 @@ locals {
     volumes_block  = ""
   })
 
-  nginx_conf_fe = templatefile("${path.module}/nginx/default.conf.tpl", {
+  nginx_conf_fe = templatefile("${path.module}/nginx/default_fe.conf.tpl", {
     domain = var.dns_record_name
     port   = 3000
   })
@@ -59,7 +59,7 @@ locals {
     volumes_block  = local.volumes_block_be
   })
 
-  nginx_conf_be = templatefile("${path.module}/nginx/default.conf.tpl", {
+  nginx_conf_be = templatefile("${path.module}/nginx/default_be.conf.tpl", {
     domain = "be.${var.dns_record_name}"
     port   = 8080
   })
@@ -68,18 +68,18 @@ locals {
     domain         = var.dns_record_name
     docker_compose = local.docker_compose_fe
     nginx_conf     = local.nginx_conf_fe
+    container_name = var.startup_fe_container_name
   })
 
   startup_script_be = templatefile("${path.module}/be_startup.sh.tpl", {
-    domain         = "be.${var.dns_record_name}"
+    domain         = "springboot.${var.dns_record_name}"
     docker_compose = local.docker_compose_be
     nginx_conf     = local.nginx_conf_be
     port           = var.startup_be_springboot_port
     secret_name    = var.startup_be_secret_name
     secret_name_json = var.startup_be_secret_name_json
-    # container_name = var.startup_be_container_name
     image          = var.startup_be_image
-
+    container_name = var.startup_be_container_name
   })
 
   startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {

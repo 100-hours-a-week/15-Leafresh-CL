@@ -82,3 +82,9 @@ COMPOSE
 # Docker Compose 실행
 sudo docker compose -f /home/ubuntu/docker-compose.yml up -d
 
+# gcs 마운트
+mkdir /home/ubuntu/logs
+gcsfuse leafresh-gcs-logs /home/ubuntu/logs
+
+nohup sudo docker logs -f mysql-develop > /home/ubuntu/logs/mysql-develop_$(date +%Y%m%d).log &
+nohup sudo docker logs -f redis-develop > /home/ubuntu/logs/redis-develop_$(date +%Y%m%d).log &

@@ -2,7 +2,7 @@
 module "vpc" {
   source       = "./modules/vpc"
   project_id   = var.project_id_dev
-  project_name = var.project_name_dev
+  vpc_name = var.vpc_name_dev
 }
 
 # 방화벽 모듈
@@ -106,24 +106,16 @@ module "pubsub" {
   source         = "./modules/pubsub"
   project_id_dev = var.project_id_dev
   project_number = var.project_number
-
   pubsub_topic_names       = var.pubsub_topic_names
 }
 
 
 # Storage 모듈
 module "storage" {
-  source                = "./modules/storage"
-  storage_name          = var.storage_name
-  project_id_dev        = var.project_id_dev
-  region                = var.region
-  storage_class         = var.storage_class
-  storage_force_destroy = true
-
-  storage_cors_origin          = var.storage_cors_origin
-  storage_cors_method          = var.storage_cors_method
-  storage_cors_response_header = var.storage_cors_response_header
-  storage_cors_max_age_seconds = var.storage_cors_max_age_seconds
+  source         = "./modules/storage"
+  region         = var.region
+  project_id_dev = var.project_id_dev
+  buckets_config = var.storage_buckets_config
 }
 
 
@@ -132,8 +124,8 @@ module "storage" {
 module "iam" {
   source         = "./modules/iam"
   project_id_dev = var.project_id_dev
-  storage_name   = module.storage.storage_name
+  gcs_bucket_names = module.storage.bucket_names
   iam_project_bindings   = var.iam_project_bindings
-  iam_storage_bindings   = var.iam_storage_bindings
+  iam_storage_bindings_per_bucket   = var.iam_storage_bindings_per_bucket
 }
 

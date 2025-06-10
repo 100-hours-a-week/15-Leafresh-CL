@@ -3,23 +3,23 @@ variable "project_id_dev" {
   type        = string
 }
 
+variable "gcs_bucket_names" {
+  description = "A map of GCS bucket names to apply IAM bindings to."
+  type        = map(string)
+}
+
 variable "iam_project_bindings" {
   description = "프로젝트 권한과 멤버 바인딩"
   type = list(object({
     role   = string
-    member = string
+    members = list(string)
   }))
 }
 
-variable "iam_storage_bindings" {
-  description = "스토리지 권한과 멤버 바인딩"
-  type = list(object({
-    role   = string
-    member = string
-  }))
-}
-
-variable "storage_name" {
-  description = "스토리지 이름"
-  type        = string
+variable "iam_storage_bindings_per_bucket" {
+  description = "A map where keys are GCS bucket config keys and values are lists of IAM bindings for that bucket."
+  type = map(list(object({
+    role    = string
+    members = list(string)
+  })))
 }

@@ -36,6 +36,23 @@ resource "google_compute_firewall" "allow_springboot_external" {
   source_ranges = ["0.0.0.0/0"]
 }
 
+# DB 인스턴스 외부 접근 허용 (22, 3306, 6379)
+resource "google_compute_firewall" "allow_db_external" {
+  project = var.project_id_dev
+  name    = "leafresh-firewall-db-to-external"
+  network = var.vpc_name
+  target_tags = [var.tag_db]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "3306", "6379"]
+  }
+  allow {
+    protocol = "icmp"
+  }
+  
+  source_ranges = ["0.0.0.0/0"]
+}
 
 # Next.js -> Spring Boot 통신 허용
 resource "google_compute_firewall" "allow_nextjs_to_springboot" {

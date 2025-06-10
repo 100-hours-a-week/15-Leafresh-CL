@@ -14,8 +14,8 @@ variable "project_id_gpu2" {
   type        = string
 }
 
-variable "project_name_dev" {
-  description = "GCP 프로젝트 이름"
+variable "vpc_name_dev" {
+  description = "GCP VPC 이름"
   type        = string
 }
 
@@ -285,47 +285,22 @@ variable "pubsub_topic_names" {
 
 
 
-
-# Storage 변수
-variable "storage_name" {
-  description = "GCS 버킷 이름"
-  type        = string
-}
-
-variable "storage_class" {
-  description = "버킷 클래스"
-  type        = string
-  default     = "STANDARD"
-}
-
-variable "storage_force_destroy" {
-  description = "버킷 내 객체와 버킷 자체 강제 삭제"
-  type        = bool
-  default     = false
-}
-
-variable "storage_cors_origin" {
-  description = "Allowed CORS origins"
-  type        = list(string)
-  default     = ["*"]
-}
-
-variable "storage_cors_method" {
-  description = "Allowed CORS HTTP methods"
-  type        = list(string)
-  default     = ["GET", "HEAD", "PUT", "POST", "DELETE"]
-}
-
-variable "storage_cors_response_header" {
-  description = "Allowed response headers"
-  type        = list(string)
-  default     = ["*"]
-}
-
-variable "storage_cors_max_age_seconds" {
-  description = "Max age for CORS options"
-  type        = number
-  default     = 3600
+# storage 변수
+variable "storage_buckets_config" {
+  description = "A map of configurations for multiple GCS buckets."
+  type = map(object({
+    name                = string
+    storage_class       = string
+    force_destroy       = bool
+    environment_label   = string
+    purpose_label       = string
+    cors_config         = object({
+      origin          = list(string)
+      method          = list(string)
+      response_header = list(string)
+      max_age_seconds = number
+    })
+  }))
 }
 
 
@@ -336,15 +311,16 @@ variable "iam_project_bindings" {
   description = "프로젝트 권한과 멤버 바인딩"
   type = list(object({
     role   = string
-    member = string
+    members = list(string)
   }))
 }
 
-variable "iam_storage_bindings" {
-  description = "스토리지 권한과 멤버 바인딩"
-  type = list(object({
-    role   = string
-    member = string
-  }))
+variable "iam_storage_bindings_per_bucket" {
+  description = "A map where keys are GCS bucket config keys and values are lists of IAM bindings for that bucket."
+  type = map(list(object({
+    role    = string
+    members = list(string)
+  })))
+  default = {}
 }
 

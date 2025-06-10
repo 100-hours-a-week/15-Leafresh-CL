@@ -3,8 +3,8 @@ services:
     image: ${image}
     container_name: ${container_name}
     restart: always
-    expose:
-      - "${port}"${env_file}${volumes_block}
+    ports:
+      - "${port}:${port}"${env_file}${volumes_block}
 
   nginx:
     image: nginx:alpine

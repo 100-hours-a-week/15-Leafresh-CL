@@ -76,7 +76,7 @@ resource "google_compute_address" "static_ip_fe" {
     env  = "dev"
   }
 
-  address = "34.47.75.62"
+  # address = "34.47.75.62"
 }
 
 # BE 외부 IP 부여
@@ -90,7 +90,7 @@ resource "google_compute_address" "static_ip_be" {
     env  = "dev"
   }
 
-  address = "34.64.183.21"
+  # address = "34.64.183.21"
 }
 
 # DB 외부 IP 부여
