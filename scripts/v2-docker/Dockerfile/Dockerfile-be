@@ -17,4 +17,5 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 EXPOSE 8080
 
 # 환경 변수는 외부에서 전달
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV TZ=Asia/Seoul
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-jar", "app.jar"]
