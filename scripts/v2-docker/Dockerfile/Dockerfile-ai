@@ -4,6 +4,17 @@ FROM python:3.12-slim
 # Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
+# --- 시간대 설정 시작 ---
+# ENV TZ 환경 변수 설정 (가장 기본적인 방법)
+ENV TZ=Asia/Seoul
+
+# tzdata 패키지 설치 (Debian 기반 이미지용)
+# 이 패키지는 시간대 정보를 제공하며, 시스템이 환경 변수 외에 시간대 정보를 참조할 때 사용됩니다.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata && \
+    rm -rf /var/lib/apt/lists/*
+# --- 시간대 설정 끝 ---
+
 # Set work directory
 WORKDIR /app
 
