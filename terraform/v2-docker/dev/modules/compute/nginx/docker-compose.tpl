@@ -4,7 +4,7 @@ services:
     container_name: ${container_name}
     restart: always
     ports:
-      - "${port}:${port}"${env_file}${volumes_block}
+      - "${port}:${port}"${additional_block}
 
   nginx:
     image: nginx:alpine

@@ -1,6 +1,9 @@
 #!/bin/bash
+# Time Set
+sudo timedatectl set-timezone Asia/Seoul
+sudo timedatectl set-ntp true
 
-# 내부 IP 가져오기
+# 내부 IP Get
 INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
   http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
 
@@ -37,12 +40,18 @@ cat << CNF > /home/ubuntu/mysql-conf/custom.cnf
 bind-address = 0.0.0.0
 CNF
 
-# RedisBloom은 이미지 자체에 모듈 포함되어 있음
+# Redis stack 적용
+sudo mkdir -p /home/ubuntu/redis-stack.conf
+cat << CNF > /home/ubuntu/redis-conf/redis-stack.conf
+port 6379
+bind 0.0.0.0
+demonize no
+protected-mode no
+loadmodule /opt/redis-stack/lib/redisbloom.so
+CNF
 
 # docker-compose.yml 생성
 cat << COMPOSE > /home/ubuntu/docker-compose.yml
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
@@ -59,14 +68,16 @@ services:
       - internal_network
 
   redis:
-    image: redislabs/rebloom:2.8.1
+    image: redis/redis-stack:latest
     container_name: redis-develop
     restart: always
     ports:
       - "${redis_port}:${redis_port}"
       - "8001:8001"
+    command: ["redis-server", "/etc/redis/redis-stack.conf"]
     volumes:
       - redis_data:/data
+      - /home/ubuntu/redis-conf/redis-stack.conf:/etc/redis/redis-stack.conf
     networks:
       - internal_network
 

@@ -20,17 +20,27 @@ locals {
     role = "db"
   })
 
-  env_be    = true
-  env_path  = "./app/.env"
-
-  gcp_key_enabled   = true
-  gcp_key_path      = "./app/leafresh-gcs.json"
-
-  volumes_block_be = local.gcp_key_enabled ? (
+  block_enabled_fe = true
+  env_fe   = "NEXT_PUBLIC_API_URL=https://springboot.${var.dns_record_name}"
+  block_fe = local.block_enabled_fe ? (
     <<EOT
 
+    environment:
+      - ${local.env_fe}
+  EOT
+  ) : ""
+
+  block_enabled_be   = true
+  env_path_be   = "./app/.env"
+  gcp_key_path_be      = "./app/leafresh-gcs.json"
+  block_be = local.block_enabled_be ? (
+    <<EOT
+
+    env_file:
+      - ${local.env_path_be}
+
     volumes:
-      - ${local.gcp_key_path}:/app/leafresh-gcs.json:ro
+      - ${local.gcp_key_path_be}:${local.gcp_key_path_be}:ro
   EOT
   ) : ""
 }
@@ -42,27 +52,27 @@ locals {
     image          = var.startup_fe_image
     container_name = var.startup_fe_container_name
     port           = var.startup_fe_nextjs_port
-    env_file       = ""
-    volumes_block  = ""
-  })
-
-  nginx_conf_fe = templatefile("${path.module}/nginx/default_fe.conf.tpl", {
-    domain = var.dns_record_name
-    port   = 3000
+    additional_block  = local.block_fe
   })
 
   docker_compose_be = templatefile("${path.module}/nginx/docker-compose.tpl", {
     image          = var.startup_be_image
     container_name = var.startup_be_container_name
     port           = var.startup_be_springboot_port
-    env_file       = local.env_be ? "\n    env_file:\n      - ${local.env_path}" : ""
-    volumes_block  = local.volumes_block_be
+    additional_block  = local.block_be
+  })
+
+
+  nginx_conf_fe = templatefile("${path.module}/nginx/default_fe.conf.tpl", {
+    domain = var.dns_record_name
+    port   = 3000
   })
 
   nginx_conf_be = templatefile("${path.module}/nginx/default_be.conf.tpl", {
-    domain = "be.${var.dns_record_name}"
+    domain = "springboot.${var.dns_record_name}"
     port   = 8080
   })
+
 
   startup_script_fe = templatefile("${path.module}/fe_startup.sh.tpl", {
     domain         = var.dns_record_name

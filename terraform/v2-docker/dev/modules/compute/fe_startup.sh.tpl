@@ -1,4 +1,7 @@
 #!/bin/bash
+# Time Set
+sudo timedatectl set-timezone Asia/Seoul
+sudo timedatectl set-ntp true
 
 # UFW 방화벽 설정
 sudo ufw allow 80/tcp
