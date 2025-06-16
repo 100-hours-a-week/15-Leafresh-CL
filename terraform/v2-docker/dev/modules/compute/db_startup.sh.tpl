@@ -1,7 +1,4 @@
 #!/bin/bash
-# Time Set
-sudo timedatectl set-timezone Asia/Seoul
-sudo timedatectl set-ntp true
 
 # 내부 IP Get
 INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
@@ -34,15 +31,20 @@ docker_local_cache_port=${redis_port}
 ENV
 
 # MySQL 설정 생성
+sudo mkdir -p /home/ubuntu/mysql_data
 sudo mkdir -p /home/ubuntu/mysql-conf
 cat << CNF > /home/ubuntu/mysql-conf/custom.cnf
 [mysqld]
 bind-address = 0.0.0.0
 CNF
 
+# gcs 마운트
+mkdir -p /home/ubuntu/logs
+gcsfuse leafresh-gcs-logs /home/ubuntu/logs
+
 # Redis stack 적용
 sudo mkdir -p /home/ubuntu/redis_data
-cat << CNF > /home/ubuntu/redis-stack.conf
+cat << CNF > /home/ubuntu/redis-conf/redis-stack.conf
 bind 0.0.0.0
 protected-mode no
 port 6379
@@ -62,7 +64,7 @@ cat << COMPOSE > /home/ubuntu/docker-compose.yml
 services:
   mysql:
     image: mysql:8.0
-    container_name: mysql-develop
+    container_name: mysql
     restart: always
     env_file:
       - /home/ubuntu/.env
@@ -76,17 +78,17 @@ services:
 
   redis:
     image: redis/redis-stack:latest
-    container_name: redis-develop
+    container_name: redis
     restart: always
     ports:
       - "${redis_port}:${redis_port}"
       - "8001:8001"
-    command: ["redis-server", "/etc/redis/redis-stack.conf"]
     volumes:
       - redis_data:/data
       - /home/ubuntu/redis-conf/redis-stack.conf:/etc/redis/redis-stack.conf
     networks:
       - internal_network
+    command: ["redis-server", "/etc/redis/redis-stack.conf"]
 
 volumes:
   mysql_data:
@@ -99,10 +101,5 @@ COMPOSE
 
 # Docker Compose 실행
 sudo docker compose -f /home/ubuntu/docker-compose.yml up -d
-
-# gcs 마운트
-mkdir /home/ubuntu/logs
-gcsfuse leafresh-gcs-logs /home/ubuntu/logs
-
 nohup sudo docker logs -f mysql-develop > /home/ubuntu/logs/mysql-develop_$(date +%Y%m%d).log &
 nohup sudo docker logs -f redis-develop > /home/ubuntu/logs/redis-develop_$(date +%Y%m%d).log &
