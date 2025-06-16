@@ -101,6 +101,31 @@ module "compute" {
   # startup_db_redis_port          = var.startup_db_redis_port
 }
 
+# Cloud SQL 모듈
+module "sql" {
+  source             = "./modules/sql"
+  project_id         = var.project_id_dev
+  region             = var.region
+  network            = module.vpc.vpc_self_link
+  db_instance_name   = var.sql_instance_name
+  db_tier            = var.sql_tier
+  database_version   = var.sql_database_version
+  allocated_storage  = var.sql_allocated_storage
+  database_name      = var.sql_database_name
+  root_password      = var.sql_root_password
+}
+
+# Memorystore Redis 모듈
+module "memorystore" {
+  source            = "./modules/memorystore"
+  project_id        = var.project_id_dev
+  region            = var.region
+  network           = module.vpc.vpc_self_link
+  instance_name     = var.redis_instance_name
+  tier              = var.redis_tier
+  memory_size_gb    = var.redis_memory_size_gb
+}
+
 # Pub/Sub 모듈
 module "pubsub" {
   source         = "./modules/pubsub"

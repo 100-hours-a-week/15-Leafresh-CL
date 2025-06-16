@@ -274,6 +274,63 @@ variable "startup_be_image" {
 
 
 
+# Cloud SQL 변수
+variable "sql_instance_name" {
+  description = "Cloud SQL 인스턴스 이름"
+  type        = string
+}
+
+variable "sql_database_name" {
+  description = "Cloud SQL에 생성할 데이터베이스 이름"
+  type        = string
+}
+
+variable "sql_root_password" {
+  description = "Cloud SQL 루트 비밀번호"
+  type        = string
+  sensitive   = true
+}
+
+variable "sql_tier" {
+  description = "Cloud SQL Tier"
+  type        = string
+  default     = "db-f1-micro"
+}
+
+variable "sql_database_version" {
+  description = "Cloud SQL 데이터베이스 버전"
+  type        = string
+  default     = "MYSQL_8_0"
+}
+
+variable "sql_allocated_storage" {
+  description = "Cloud SQL 저장공간 크기(GB)"
+  type        = number
+  default     = 10
+}
+
+
+
+# Memorystore Redis 변수
+variable "redis_instance_name" {
+  description = "Memorystore Redis 인스턴스 이름"
+  type        = string
+}
+
+variable "redis_tier" {
+  description = "Memorystore Tier"
+  type        = string
+  default     = "BASIC"
+}
+
+variable "redis_memory_size_gb" {
+  description = "Redis 메모리 크기(GB)"
+  type        = number
+  default     = 2
+}
+
+
+
 # Pub/Sub 변수
 variable "pubsub_topic_names" {
   type = map(object({

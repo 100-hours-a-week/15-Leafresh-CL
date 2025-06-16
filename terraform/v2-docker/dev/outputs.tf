@@ -33,3 +33,18 @@ output "pubsub_topic_names" {
   value       = module.pubsub.pubsub_topic_names
 }
 
+output "sql_private_ip" {
+  description = "Cloud SQL Private IP 주소"
+  value       = module.sql.private_ip_address
+}
+
+output "redis_host" {
+  description = "Memorystore Redis 호스트 주소"
+  value       = module.memorystore.host
+}
+
+output "redis_port" {
+  description = "Memorystore Redis 포트"
+  value       = module.memorystore.port
+}
+
