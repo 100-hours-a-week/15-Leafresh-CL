@@ -1,21 +1,28 @@
-# Node.js 런타임 이미지 (Next.js 권장)
+# 
+## Node.js 런타임 이미지 (Next.js 권장)
 FROM node:lts-alpine AS builder
 
-# 작업 디렉토리 설정
+## 작업 디렉토리 설정
 WORKDIR /app
 
-# 의존성 파일 복사
+## 의존성 파일 복사
 COPY package.json pnpm-lock.yaml ./
 
-# 의존성 설치
+## 의존성 설치
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
-# 소스 코드 복사
+## 소스 코드 복사
 COPY . .
 
-# Next.js 빌드
+## Next.js 빌드
 RUN pnpm run build
 
+
+
+
+
+
+# 
 # 프로덕션 환경을 위한 작은 이미지 생성
 FROM node:lts-alpine AS runner
 
