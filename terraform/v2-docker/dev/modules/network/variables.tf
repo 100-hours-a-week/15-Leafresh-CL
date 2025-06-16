@@ -45,10 +45,10 @@ variable "subnet_name_be" {
   type        = string
 }
 
-variable "subnet_name_db" {
-  description = "DB 서브넷 이름"
-  type        = string
-}
+#variable "subnet_name_db" {
+#  description = "DB 서브넷 이름"
+#  type        = string
+#}
 
 variable "subnet_cidr_fe" {
   description = "Next.js Public Subnet의 CIDR 블록"
@@ -60,10 +60,10 @@ variable "subnet_cidr_be" {
   type        = string
 }
 
-variable "subnet_cidr_db" {
-  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
-  type        = string
-}
+#variable "subnet_cidr_db" {
+#  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
+#  type        = string
+#}
 
 variable "vpc_self_link" {
   description = "Self link of the VPC (from vpc module)"
@@ -95,7 +95,7 @@ variable "static_ip_name_be" {
   type        = string
 }
 
-variable "static_ip_name_db" {
-  description = "DB 외부 IP 이름"
-  type        = string
-}
+#variable "static_ip_name_db" {
+#  description = "DB 외부 IP 이름"
+#  type        = string
+#}

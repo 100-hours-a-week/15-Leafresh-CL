@@ -13,7 +13,7 @@ module "firewall" {
 
   tag_fe = var.tag_fe
   tag_be = var.tag_be
-  tag_db = var.tag_db
+  # tag_db = var.tag_db
 
   vpc_cidr_block_gpu1 = var.vpc_cidr_block_gpu1
   vpc_cidr_block_gpu2 = var.vpc_cidr_block_gpu2
@@ -36,15 +36,15 @@ module "network" {
 
   static_ip_name_fe = var.static_ip_name_fe
   static_ip_name_be = var.static_ip_name_be
-  static_ip_name_db = var.static_ip_name_db
+  # static_ip_name_db = var.static_ip_name_db
 
   subnet_name_fe = var.subnet_name_fe
   subnet_name_be = var.subnet_name_be
-  subnet_name_db = var.subnet_name_db
+  # subnet_name_db = var.subnet_name_db
 
   subnet_cidr_fe = var.subnet_cidr_fe
   subnet_cidr_be = var.subnet_cidr_be
-  subnet_cidr_db = var.subnet_cidr_db
+  # subnet_cidr_db = var.subnet_cidr_db
 
   vpc_self_link = module.vpc.vpc_self_link
 }
@@ -58,27 +58,27 @@ module "compute" {
 
   static_ip_fe = module.network.static_ip_fe
   static_ip_be = module.network.static_ip_be
-  static_ip_db = module.network.static_ip_db
+  # static_ip_db = module.network.static_ip_db
 
   static_internal_ip_fe = var.static_internal_ip_fe
   static_internal_ip_be = var.static_internal_ip_be
-  static_internal_ip_db = var.static_internal_ip_db
+  # static_internal_ip_db = var.static_internal_ip_db
 
   subnet_fe_self_link = module.network.subnet_fe_self_link
   subnet_be_self_link = module.network.subnet_be_self_link
-  subnet_db_self_link = module.network.subnet_db_self_link
+  # subnet_db_self_link = module.network.subnet_db_self_link
 
   tag_fe = var.tag_fe
   tag_be = var.tag_be
-  tag_db = var.tag_db
+  # tag_db = var.tag_db
 
   gce_name_fe = var.gce_name_fe
   gce_name_be = var.gce_name_be
-  gce_name_db = var.gce_name_db
+  # gce_name_db = var.gce_name_db
 
   gce_machine_type_fe = var.gce_machine_type_fe
   gce_machine_type_be = var.gce_machine_type_be
-  gce_machine_type_db = var.gce_machine_type_db
+  # gce_machine_type_db = var.gce_machine_type_db
 
   gce_image = var.gce_image
 
@@ -95,10 +95,10 @@ module "compute" {
   startup_be_secret_name         = var.startup_be_secret_name
   startup_be_secret_name_json    = var.startup_be_secret_name_json
   startup_be_springboot_port     = var.startup_be_springboot_port
-  startup_db_mysql_database_name = var.startup_db_mysql_database_name
-  startup_db_mysql_root_password = var.startup_db_mysql_root_password
-  startup_db_redis_host          = var.startup_db_redis_host
-  startup_db_redis_port          = var.startup_db_redis_port
+  # startup_db_mysql_database_name = var.startup_db_mysql_database_name
+  # startup_db_mysql_root_password = var.startup_db_mysql_root_password
+  # startup_db_redis_host          = var.startup_db_redis_host
+  # startup_db_redis_port          = var.startup_db_redis_port
 }
 
 # Pub/Sub 모듈
