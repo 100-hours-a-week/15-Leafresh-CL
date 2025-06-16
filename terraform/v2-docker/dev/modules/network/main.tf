@@ -17,13 +17,13 @@ resource "google_compute_subnetwork" "public_be" {
   network       = var.vpc_self_link
 }
 
-resource "google_compute_subnetwork" "public_db" {
-  project       = var.project_id_dev
-  name          = var.subnet_name_db
-  ip_cidr_range = var.subnet_cidr_db
-  region        = var.region
-  network       = var.vpc_self_link
-}
+#resource "google_compute_subnetwork" "public_db" {
+#  project       = var.project_id_dev
+#  name          = var.subnet_name_db
+#  ip_cidr_range = var.subnet_cidr_db
+#  region        = var.region
+#  network       = var.vpc_self_link
+#}
 
 
 # NAT Gateway 정의
@@ -94,18 +94,18 @@ resource "google_compute_address" "static_ip_be" {
 }
 
 # DB 외부 IP 부여
-resource "google_compute_address" "static_ip_db" {
-  name    = var.static_ip_name_db
-  region  = var.region
-  project = var.project_id_dev
-
-  labels = {
-    role = "db"
-    env  = "dev"
-  }
-
-  # address = "34.64.134.224"
-}
+#resource "google_compute_address" "static_ip_db" {
+#  name    = var.static_ip_name_db
+#  region  = var.region
+#  project = var.project_id_dev
+#
+#  labels = {
+#    role = "db"
+#    env  = "dev"
+#  }
+#
+#  # address = "34.64.134.224"
+#}
 
 
 # VPC Peering 정의

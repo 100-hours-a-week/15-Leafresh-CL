@@ -25,10 +25,10 @@ variable "static_ip_be" {
   type        = string
 }
 
-variable "static_ip_db" {
-  description = "DB 외부 IP 이름"
-  type        = string
-}
+#variable "static_ip_db" {
+#  description = "DB 외부 IP 이름"
+#  type        = string
+#}
 
 variable "static_internal_ip_fe" {
   description = "Next.js 인스턴스의 내부 IP"
@@ -40,10 +40,10 @@ variable "static_internal_ip_be" {
   type        = string
 }
 
-variable "static_internal_ip_db" {
-  description = "DB 인스턴스의 내부 IP"
-  type        = string
-}
+#variable "static_internal_ip_db" {
+#  description = "DB 인스턴스의 내부 IP"
+#  type        = string
+#}
 
 variable "subnet_fe_self_link" {
   description = "Next.js Public Subnet의 Self Link"
@@ -55,10 +55,10 @@ variable "subnet_be_self_link" {
   type        = string
 }
 
-variable "subnet_db_self_link" {
-  description = "MySQL 및 Redis Private Subnet의 Self Link"
-  type        = string
-}
+#variable "subnet_db_self_link" {
+#  description = "MySQL 및 Redis Private Subnet의 Self Link"
+#  type        = string
+#}
 
 variable "tag_fe" {
   description = "Next.js 인스턴스에 적용할 네트워크 태그"
@@ -70,10 +70,10 @@ variable "tag_be" {
   type        = string
 }
 
-variable "tag_db" {
-  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
-  type        = string
-}
+#variable "tag_db" {
+#  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+#  type        = string
+#}
 
 variable "gce_name_fe" {
   description = "fe 인스턴스 이름"
@@ -85,10 +85,10 @@ variable "gce_name_be" {
   type        = string
 }
 
-variable "gce_name_db" {
-  description = "db 인스턴스 이름"
-  type        = string
-}
+#variable "gce_name_db" {
+#  description = "db 인스턴스 이름"
+#  type        = string
+#}
 
 variable "dns_zone_name" {
   description = "기존 Cloud DNS Zone의 이름"
@@ -110,10 +110,10 @@ variable "gce_machine_type_be" {
   type        = string
 }
 
-variable "gce_machine_type_db" {
-  description = "GCE BE용 VM 타입"
-  type        = string
-}
+#variable "gce_machine_type_db" {
+#  description = "GCE BE용 VM 타입"
+#  type        = string
+#}
 
 variable "gce_image" {
   description = "GCE VM 이미지"
@@ -167,22 +167,22 @@ variable "startup_be_image" {
   type        = string
 }
 
-variable "startup_db_mysql_root_password" {
-  description = "DB 인스턴스 루트 계정 비밀번호"
-  type        = string
-}
-
-variable "startup_db_mysql_database_name" {
-  description = "DB 인스턴스 데이터베이스 이름"
-  type        = string
-}
-
-variable "startup_db_redis_port" {
-  description = "DB 인스턴스 redis 포트 번호"
-  type        = string
-}
-
-variable "startup_db_redis_host" {
-  description = "DB 인스턴스 redis 호스트 이름"
-  type        = string
-}
+#variable "startup_db_mysql_root_password" {
+#  description = "DB 인스턴스 루트 계정 비밀번호"
+#  type        = string
+#}
+#
+#variable "startup_db_mysql_database_name" {
+#  description = "DB 인스턴스 데이터베이스 이름"
+#  type        = string
+#}
+#
+#variable "startup_db_redis_port" {
+#  description = "DB 인스턴스 redis 포트 번호"
+#  type        = string
+#}
+#
+#variable "startup_db_redis_host" {
+#  description = "DB 인스턴스 redis 호스트 이름"
+#  type        = string
+#}
