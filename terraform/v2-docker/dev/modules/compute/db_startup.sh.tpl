@@ -41,8 +41,8 @@ bind-address = 0.0.0.0
 CNF
 
 # Redis stack 적용
-sudo mkdir -p /home/ubuntu/redis-stack.conf
-cat << CNF > /home/ubuntu/redis-conf/redis-stack.conf
+sudo mkdir -p /home/ubuntu/redis_data
+cat << CNF > /home/ubuntu/redis-stack.conf
 bind 0.0.0.0
 protected-mode no
 port 6379
