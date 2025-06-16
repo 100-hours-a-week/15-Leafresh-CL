@@ -43,11 +43,18 @@ CNF
 # Redis stack 적용
 sudo mkdir -p /home/ubuntu/redis-stack.conf
 cat << CNF > /home/ubuntu/redis-conf/redis-stack.conf
-port 6379
 bind 0.0.0.0
-demonize no
 protected-mode no
+port 6379
+daemonize no
 loadmodule /opt/redis-stack/lib/redisbloom.so
+save 900 1
+save 300 10
+save 60 10000
+appendonly yes
+appendfilename "appendonly.aof"
+appendfsync everysec
+dir /data
 CNF
 
 # docker-compose.yml 생성
