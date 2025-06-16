@@ -1,0 +1,342 @@
+name: Frontend CI/CD
+
+on:
+  pull_request:
+    branches: ['develop', 'main']
+  push:
+    tags:
+      - 'v*-dev'
+      - 'v*'
+
+jobs:
+  setup:
+    name: Setup and Install Dependencies
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      pnpm_cache_hit: ${{ steps.cache-pnpm.outputs.cache-hit }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+      - name: Cache pnpm modules
+        id: cache-pnpm
+        uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('./pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./
+
+  lint-and-unit-test:
+    name: Lint and Unit test
+    needs: setup
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Delete Duplicates
+        run: |
+          pnpm dedupe
+          pnpm install
+      - name: Run Lint
+        run: pnpm run lint
+      - name: Run Unit Test
+        run: pnpm run test
+
+  integration-test:
+    name: Integration Test
+    needs: setup
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build Next.js app for testing
+        run: pnpm run build
+      - name: Start Next.js app for testing
+        run: pnpm run start &
+      - name: Wait for App to Start (Health Check)
+        run: |
+          TIMEOUT=30
+          sleep $TIMEOUT;
+          # for i in $(seq 1 $TIMEOUT); do
+          #   if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 >/dev/null 2>&1 && [ "$status" -eq "200" ]; then
+          #     echo "Application is ready"
+          #     exit 0
+          #   fi
+          #   echo "Waiting for application... ($i/$TIMEOUT)"
+          #   sleep 1
+          # done
+          # echo "Application did not start within the timeout"
+          # exit 1
+      - name: Run Playwright Tests (${{ matrix.browser }})
+        run: pnpm exec playwright test --project=chromium
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+  build-dev:
+    name: Build and Push Docker (dev)
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    needs: [lint-and-unit-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set short commit SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: jchanho99/frontend-develop:${{ env.SHORT_SHA }}
+
+  build-prod:
+    name: Build and Push Docker (prod)
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    needs: [integration-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set short commit SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: jchanho99/frontend-prod:${{ env.SHORT_SHA }}
+
+  deploy-dev:
+    name: Deploy to Dev Server
+    if: startsWith(github.ref, 'refs/tags/v') && endsWith(github.ref, '-dev')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout for git access
+        uses: actions/checkout@v3
+
+      - name: Extract commit SHA from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          COMMIT_SHA=$(git rev-list -n 1 "$TAG")
+          SHORT_SHA=${COMMIT_SHA:0:7}
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+
+      - name: Deploy to Dev
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST_DEV }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            IMAGE="jchanho99/frontend-develop:${SHORT_SHA}"
+            cd /opt/frontend/
+            echo "Pulling Docker image: $IMAGE"
+            sudo docker stop frontend-develop || true
+            sudo docker rm frontend-develop || true
+            sudo docker pull "$IMAGE"
+            sudo docker run -d --name frontend-develop \
+              --network frontend_default \
+              -p 3000:3000 \
+              --restart always \
+              "$IMAGE"
+
+  deploy-prod:
+    name: Deploy to Prod Server (Blue-Green)
+    if: startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '-dev')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout for git access
+        uses: actions/checkout@v3
+
+      - name: Extract commit SHA from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          COMMIT_SHA=$(git rev-list -n 1 "$TAG")
+          SHORT_SHA=${COMMIT_SHA:0:7}
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+
+      - name: Deploy to Prod
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST_PROD }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -e # 오류 발생 시 즉시 스크립트 중단
+            VERSION="${{ github.ref }}"             # ex: refs/tags/v2.0.6
+            VERSION="${VERSION#refs/tags/}"         # remove prefix
+            IMAGE="jchanho99/frontend-prod:${{ env.VERSION }}"
+            HEALTH_CHECK_URL="http://localhost:3001" # 헬스 체크 URL
+
+            echo "🚀 Starting Prod Blue-Green Deployment to host: ${{ secrets.LEAFRESH_PROD_HOST }}"
+            echo "🖼️ Using image: $IMAGE"
+
+            cd /opt/frontend/
+            echo "PWD: $(pwd)"
+
+            echo "🚚 Pulling Docker image: $IMAGE"
+            sudo docker pull "$IMAGE"
+
+            CURRENT=$(cat /opt/frontend-current 2>/dev/null || echo blue)
+            NEXT=$([ "$CURRENT" = "blue" ] && echo green || echo blue)
+
+            echo "🔵 Current active environment: $CURRENT"
+            echo "🟢 Next environment to deploy: $NEXT"
+
+            echo "🚀 Bringing up $NEXT environment (frontend-$NEXT)..."
+            # 만약 docker-compose.yml에서 $NEXT에 해당하는 특정 서비스를 지정해야 한다면,
+            # 예: sudo docker compose up -d service-$NEXT
+            sudo docker compose up -d # 이 명령이 frontend-$NEXT 컨테이너를 시작/업데이트해야 함
+
+            echo "🩺 Performing health check for $NEXT on $HEALTH_CHECK_URL..."
+            HEALTH_CHECK_PASSED=false
+            for i in {1..60}; do
+              if nc -z localhost 3001 2>/dev/null; then
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_CHECK_URL")
+                if [ "$HTTP_CODE" -eq 200 ]; then
+                  CONTENT_STATUS=$(curl -s "$HEALTH_CHECK_URL" | grep "<title>")
+                  if [ ! -z "$CONTENT_STATUS" ]; then
+                    echo "✅ Health check passed for $NEXT on attempt $i (HTTP $HTTP_CODE with <title>)."
+                    HEALTH_CHECK_PASSED=true
+                    break
+                  fi
+                fi
+              fi
+              echo "⏳ Waiting ($i)..."
+              sleep 1
+            done
+
+            if [ "$HEALTH_CHECK_PASSED" != "true" ]; then
+              echo "❌ Health check failed for $NEXT environment after 60 attempts."
+              echo "💣 Rolling back: Attempting to stop and remove $NEXT environment (frontend-$NEXT)..."
+              sudo docker stop "frontend-$NEXT" || true
+              sudo docker rm "frontend-$NEXT" || true
+              exit 1
+            fi
+
+            echo "✅ Health check successful for $NEXT environment."
+            echo "🔄 Switching traffic..."
+
+            echo "🛑 Stopping and removing $CURRENT environment (frontend-$CURRENT)..."
+            sudo docker stop "frontend-$CURRENT" || true
+            sudo docker rm "frontend-$CURRENT" || true
+
+            echo "⚠️ Force restarting $NEXT environment as per original script logic (stop, rm, up)..."
+            sudo docker stop "frontend-$NEXT" || true
+            sudo docker rm "frontend-$NEXT" || true
+            sudo docker compose up -d # $NEXT 환경을 다시 시작
+
+            echo "$NEXT" > /opt/frontend-current
+            echo "🎉 Prod Blue-Green deployment to $NEXT complete. $NEXT is now active."
+
+      - name: Set Status (Prod)
+        id: set-status
+        if: success()
+        run: echo "status=success" >> "$GITHUB_OUTPUT"
+
+      - name: Set Status (Prod Failure)
+        if: failure() && steps.deploy-step.outcome == 'failure' # deploy-step이 실패했을 때만
+        run: echo "status=failure" >> "$GITHUB_OUTPUT"
+
+  notify:
+    name: Discord Notification
+    needs: [deploy-dev, deploy-prod] # 명시적으로 종속성 추가
+    if: |
+      (needs.deploy-dev.result != 'skipped') || (needs.deploy-prod.result != 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Message
+        run: |
+          MESSAGE=""
+
+          # Check Dev Deploy Status
+          if [ "${{ needs.deploy-dev.result }}" != "" ]; then
+            STATUS_DEV="${{ needs.deploy-dev.outputs.status }}"
+            if [ "$STATUS_DEV" = "success" ]; then
+              MESSAGE="${MESSAGE}✅ \`[FE develop]\` 배포 완료\n"
+            elif [ "$STATUS_DEV" = "failure" ]; then
+              MESSAGE="${MESSAGE}🚨 \`[FE develop]\` 배포 실패\n"
+            fi
+          fi
+
+          # Check Prod Deploy Status
+          if [ "${{ needs.deploy-prod.result }}" != "" ]; then
+            STATUS_PROD="${{ needs.deploy-prod.outputs.status }}"
+            if [ "$STATUS_PROD" = "success" ]; then
+              MESSAGE="${MESSAGE}✅ \`[FE prod]\` 배포 완료 (Blue-Green)\n"
+            elif [ "$STATUS_PROD" = "failure" ]; then
+              MESSAGE="${MESSAGE}🚨 \`[FE prod]\` 배포 실패 (헬스체크 실패 등)\n"
+            fi
+          fi
+
+          if [ -z "$MESSAGE" ]; then
+            MESSAGE="⚠️ 배포 상태 정보를 찾을 수 없습니다."
+          fi
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}

@@ -1,17 +1,38 @@
-# 사용할 Java 런타임 이미지를 선택합니다.
-FROM openjdk:21-jre-slim
+# 1단계: 빌드 스테이지
+FROM gradle:8.5-jdk21 AS builder
 
-# 컨테이너 내에서 애플리케이션이 실행될 디렉토리를 설정합니다.
 WORKDIR /app
 
-# 빌드 결과물인 JAR 파일을 컨테이너 내부의 /app 디렉토리로 복사합니다.
-# 실제 JAR 파일 이름은 워크플로우의 artifact 이름과 빌드 결과에 따라 달라질 수 있습니다.
-COPY build/libs/*.jar app.jar
+COPY --chown=gradle:gradle . .
 
-# 컨테이너가 시작될 때 실행할 명령어를 정의합니다.
-# spring-boot-maven-plugin 또는 spring-boot-gradle-plugin을 사용하는 경우
-# 실행 가능한 JAR 파일이 생성되므로 java -jar 명령어를 사용할 수 있습니다.
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Gradle 빌드 실행
+RUN gradle build --no-daemon
 
-# (선택 사항) 애플리케이션이 사용하는 포트를 노출합니다.
-# EXPOSE 8080
+---
+
+# 2단계: 실행 스테이지
+FROM eclipse-temurin:21-jre-alpine
+
+# 컨테이너 내 작업 디렉토리 설정
+WORKDIR /app
+
+# 빌드 스테이지에서 생성된 JAR 파일 복사
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+# 애플리케이션 포트 노출
+EXPOSE 8080
+
+# --- 시간대 설정 시작 ---
+# 환경 변수 TZ 설정 (대부분의 시스템 유틸리티 및 애플리케이션이 인식)
+ENV TZ=Asia/Seoul
+
+# Alpine 기반 이미지용 tzdata 패키지 설치 및 시간대 링크 설정
+# 이 과정을 통해 시스템 전반에 걸쳐 시간대 정보가 올바르게 적용됩니다.
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    echo "${TZ}" > /etc/timezone
+# --- 시간대 설정 끝 ---
+
+# Java 애플리케이션 실행 명령어
+# Java 애플리케이션 자체의 시간대 설정을 명시적으로 지정
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-jar", "app.jar"]

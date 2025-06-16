@@ -1,47 +1,51 @@
-# 
-## Node.js 런타임 이미지 (Next.js 권장)
-FROM node:lts-alpine AS builder
+# Stage 1: Build stage
+FROM node:22-alpine AS builder
 
-## 작업 디렉토리 설정
 WORKDIR /app
 
-## 의존성 파일 복사
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Install dependencies
 COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-## 의존성 설치
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
-
-## 소스 코드 복사
+# Copy source and build
 COPY . .
-
-## Next.js 빌드
 RUN pnpm run build
 
-
-
-
-
-
-# 
-# 프로덕션 환경을 위한 작은 이미지 생성
-FROM node:lts-alpine AS runner
+# Stage 2: Runtime stage (minimal)
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# 빌더 단계에서 빌드 결과 복사
-COPY --from=builder /app/.next .
+ENV NODE_ENV=production
+
+# Create non-root user
+RUN addgroup -g 1001 nodejs && adduser -u 1001 -G nodejs -s /bin/sh -D nodejs && \
+    npm install -g pnpm
+
+# --- 시간대 설정 시작 ---
+# 환경 변수 TZ 설정 (대부분의 시스템 유틸리티 및 애플리케이션이 인식)
+ENV TZ=Asia/Seoul
+
+# Alpine 기반 이미지용 tzdata 패키지 설치 및 시간대 링크 설정
+# 이 과정을 통해 시스템 전반에 걸쳐 시간대 정보가 올바르게 적용됩니다.
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    echo "${TZ}" > /etc/timezone
+# --- 시간대 설정 끝 ---
+
+# Copy only what is needed to run
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/next.config.ts ./next.config.ts
 
-# 필요한 종속성만 설치 (프로덕션 환경)
-RUN npm install --omit=dev
+USER nodejs
 
-# Next.js 서버 실행 명령어
-CMD ["node", "server.js"]
-
-# (선택 사항) 포트 노출
 EXPOSE 3000
 
-# Next.js 서버를 시작하기 위한 스크립트 (server.js 필요)
-# 또는 Next.js 자체 내장 서버를 사용할 수 있습니다.
-# CMD ["pnpm", "start"]
+# ENTRYPOINT 설정 유지
+ENTRYPOINT ["pnpm", "run", "test"]
