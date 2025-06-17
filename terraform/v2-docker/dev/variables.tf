@@ -53,10 +53,10 @@ variable "subnet_cidr_be" {
   type        = string
 }
 
-#variable "subnet_cidr_db" {
-#  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
-#  type        = string
-#}
+variable "subnet_cidr_db" {
+  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
+  type        = string
+}
 
 variable "vpc_name_gpu1" {
   description = "기존 GPU1 instance VPC의 이름"
@@ -92,10 +92,10 @@ variable "subnet_name_be" {
   type        = string
 }
 
-#variable "subnet_name_db" {
-#  description = "DB 서브넷 이름"
-#  type        = string
-#}
+variable "subnet_name_db" {
+  description = "DB 서브넷 이름"
+  type        = string
+}
 
 # variable "nat_ip" {
 #   description = "NAT IP 주소"
@@ -140,10 +140,10 @@ variable "static_internal_ip_be" {
   type        = string
 }
 
-#variable "static_internal_ip_db" {
-#  description = "DB 인스턴스의 내부 IP"
-#  type        = string
-#}
+variable "static_internal_ip_db" {
+  description = "DB 인스턴스의 내부 IP"
+  type        = string
+}
 
 variable "tag_fe" {
   description = "Next.js 인스턴스에 적용할 네트워크 태그"
@@ -155,10 +155,10 @@ variable "tag_be" {
   type        = string
 }
 
-#variable "tag_db" {
-#  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
-#  type        = string
-#}
+variable "tag_db" {
+  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
 
 variable "gce_name_fe" {
   description = "fe 인스턴스 이름"
@@ -170,10 +170,10 @@ variable "gce_name_be" {
   type        = string
 }
 
-#variable "gce_name_db" {
-#  description = "db 인스턴스 이름"
-#  type        = string
-#}
+variable "gce_name_db" {
+  description = "db 인스턴스 이름"
+  type        = string
+}
 
 variable "gce_machine_type_fe" {
   description = "GCE FE용 VM 타입"
@@ -185,10 +185,10 @@ variable "gce_machine_type_be" {
   type        = string
 }
 
-#variable "gce_machine_type_db" {
-#  description = "GCE BE용 VM 타입"
-#  type        = string
-#}
+variable "gce_machine_type_db" {
+  description = "GCE BE용 VM 타입"
+  type        = string
+}
 
 variable "dns_zone_name" {
   description = "기존 Cloud DNS Zone의 이름"
@@ -256,20 +256,85 @@ variable "startup_be_image" {
 #  description = "DB 인스턴스 루트 계정 비밀번호"
 #  type        = string
 #}
-#
+
 #variable "startup_db_mysql_database_name" {
 #  description = "DB 인스턴스 데이터베이스 이름"
 #  type        = string
 #}
-#
-#variable "startup_db_redis_port" {
-#  description = "DB 인스턴스 redis 포트 번호"
+
+variable "startup_db_redis_port" {
+  description = "DB 인스턴스 redis 포트 번호"
+  type        = string
+}
+
+variable "startup_db_redis_host" {
+  description = "DB 인스턴스 redis 호스트 이름"
+  type        = string
+}
+
+
+
+# Cloud SQL 변수
+variable "sql_instance_name" {
+  description = "Cloud SQL 인스턴스 이름"
+  type        = string
+}
+
+variable "sql_database_name" {
+  description = "Cloud SQL에 생성할 데이터베이스 이름"
+  type        = string
+}
+
+variable "sql_root_password" {
+  description = "Cloud SQL 루트 비밀번호"
+  type        = string
+  sensitive   = true
+}
+
+variable "sql_tier" {
+  description = "Cloud SQL Tier"
+  type        = string
+  default     = "db-f1-micro"
+}
+
+variable "sql_database_version" {
+  description = "Cloud SQL 데이터베이스 버전"
+  type        = string
+  default     = "MYSQL_8_0"
+}
+
+variable "sql_allocated_storage" {
+  description = "Cloud SQL 저장공간 크기(GB)"
+  type        = number
+  default     = 10
+}
+
+variable "sql_authorized_networks" {
+  description = "Cloud SQL Public IP에 접근을 허용할 CIDR 목록"
+  type = list(object({
+    name = string
+    cidr = string
+  }))
+  default = []
+}
+
+
+# Memorystore Redis 변수
+#variable "redis_instance_name" {
+#  description = "Memorystore Redis 인스턴스 이름"
 #  type        = string
 #}
 #
-#variable "startup_db_redis_host" {
-#  description = "DB 인스턴스 redis 호스트 이름"
+#variable "redis_tier" {
+#  description = "Memorystore Tier"
 #  type        = string
+#  default     = "BASIC"
+#}
+#
+#variable "redis_memory_size_gb" {
+#  description = "Redis 메모리 크기(GB)"
+#  type        = number
+#  default     = 2
 #}
 
 
@@ -289,12 +354,12 @@ variable "pubsub_topic_names" {
 variable "storage_buckets_config" {
   description = "A map of configurations for multiple GCS buckets."
   type = map(object({
-    name                = string
-    storage_class       = string
-    force_destroy       = bool
-    environment_label   = string
-    purpose_label       = string
-    cors_config         = object({
+    name              = string
+    storage_class     = string
+    force_destroy     = bool
+    environment_label = string
+    purpose_label     = string
+    cors_config = object({
       origin          = list(string)
       method          = list(string)
       response_header = list(string)
@@ -304,23 +369,35 @@ variable "storage_buckets_config" {
 }
 
 
+# service account 변수
+variable "service_accounts" {
+  description = "생성할 서비스 계정과 부여할 역할 목록"
+  type = list(object({
+    account_id   = string
+    display_name = string
+    roles        = list(string)
+  }))
+}
 
 
 # iam 변수
-variable "iam_project_bindings" {
-  description = "프로젝트 권한과 멤버 바인딩"
+variable "user_accounts" {
+  description = "부여할 사용자 계정과 역할 목록"
   type = list(object({
-    role   = string
-    members = list(string)
+    member = string
+    roles  = list(string)
   }))
 }
 
 variable "iam_storage_bindings_per_bucket" {
-  description = "A map where keys are GCS bucket config keys and values are lists of IAM bindings for that bucket."
+  description = "버킷 키별로 부여할 IAM 역할·멤버 리스트"
   type = map(list(object({
     role    = string
     members = list(string)
   })))
-  default = {}
 }
 
+variable "gcs_bucket_names" {
+  description = "실제 버킷 이름 맵"
+  type        = map(string)
+}

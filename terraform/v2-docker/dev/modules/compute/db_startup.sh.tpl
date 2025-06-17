@@ -5,7 +5,7 @@ INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
   http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
 
 # 방화벽 설정
-sudo ufw allow 3306/tcp
+# sudo ufw allow 3306/tcp
 sudo ufw allow ${redis_port}/tcp
 sudo ufw allow 8001/tcp
 sudo ufw allow 22/tcp
@@ -24,19 +24,17 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 
 # .env 파일 생성
 cat << ENV > /home/ubuntu/.env
-MYSQL_ROOT_PASSWORD=${mysql_root_password}
-MYSQL_DATABASE=${mysql_database}
 docker_local_cache_host=${redis_host}
 docker_local_cache_port=${redis_port}
 ENV
 
 # MySQL 설정 생성
-sudo mkdir -p /home/ubuntu/mysql_data
-sudo mkdir -p /home/ubuntu/mysql-conf
-cat << CNF > /home/ubuntu/mysql-conf/custom.cnf
-[mysqld]
-bind-address = 0.0.0.0
-CNF
+#sudo mkdir -p /home/ubuntu/mysql_data
+#sudo mkdir -p /home/ubuntu/mysql-conf
+#cat << CNF > /home/ubuntu/mysql-conf/custom.cnf
+#[mysqld]
+#bind-address = 0.0.0.0
+#CNF
 
 # gcs 마운트
 mkdir -p /home/ubuntu/logs
@@ -62,19 +60,19 @@ CNF
 # docker-compose.yml 생성
 cat << COMPOSE > /home/ubuntu/docker-compose.yml
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    restart: always
-    env_file:
-      - /home/ubuntu/.env
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - /home/ubuntu/mysql-conf/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
-    networks:
-      - internal_network
+#  mysql:
+#    image: mysql:8.0
+#    container_name: mysql
+#    restart: always
+#    env_file:
+#      - /home/ubuntu/.env
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - mysql_data:/var/lib/mysql
+#      - /home/ubuntu/mysql-conf/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
+#    networks:
+#      - internal_network
 
   redis:
     image: redis/redis-stack:latest
@@ -91,7 +89,7 @@ services:
     command: ["redis-server", "/etc/redis/redis-stack.conf"]
 
 volumes:
-  mysql_data:
+  # mysql_data:
   redis_data:
 
 networks:
@@ -101,5 +99,5 @@ COMPOSE
 
 # Docker Compose 실행
 sudo docker compose -f /home/ubuntu/docker-compose.yml up -d
-nohup sudo docker logs -f mysql-develop > /home/ubuntu/logs/mysql-develop_$(date +%Y%m%d).log &
+# nohup sudo docker logs -f mysql-develop > /home/ubuntu/logs/mysql-develop_$(date +%Y%m%d).log &
 nohup sudo docker logs -f redis-develop > /home/ubuntu/logs/redis-develop_$(date +%Y%m%d).log &

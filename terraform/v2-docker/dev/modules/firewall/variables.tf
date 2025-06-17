@@ -20,10 +20,10 @@ variable "tag_be" {
   type        = string
 }
 
-#variable "tag_db" {
-#  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
-#  type        = string
-#}
+variable "tag_db" {
+  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
 
 # variable "vpc_name_gpu1" {
 #   description = "기존 gpu1 instance VPC의 이름"

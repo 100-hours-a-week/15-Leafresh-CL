@@ -25,7 +25,7 @@ output "springboot_internal_ip" {
   value       = google_compute_instance.be.network_interface[0].network_ip
 }
 
-#output "db_internal_ip" {
-#  description = "MySQL/Redis 인스턴스의 내부 IP 주소"
-#  value       = google_compute_instance.db.network_interface[0].network_ip
-#}
+output "db_internal_ip" {
+  description = "MySQL/Redis 인스턴스의 내부 IP 주소"
+  value       = google_compute_instance.db.network_interface[0].network_ip
+}

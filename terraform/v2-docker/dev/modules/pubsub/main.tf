@@ -17,8 +17,8 @@ resource "google_pubsub_topic" "be" {
 resource "google_pubsub_subscription" "be" {
   for_each = var.pubsub_topic_names
 
-  name  = each.value.subscription_name
-  topic = google_pubsub_topic.be[each.key].id
+  name    = each.value.subscription_name
+  topic   = google_pubsub_topic.be[each.key].id
   project = var.project_id_dev
 
   ack_deadline_seconds = 20
