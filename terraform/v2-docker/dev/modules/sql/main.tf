@@ -12,7 +12,16 @@ resource "google_sql_database_instance" "default" {
     disk_autoresize = true
 
     ip_configuration {
-      ipv4_enabled    = false
+      ipv4_enabled = true
+
+      dynamic "authorized_networks" {
+        for_ezch = var.authorized_networks
+        content {
+          name  = authorized_networks.value.name
+          value = authorized_networks.value.cidr
+        }
+      }
+
       private_network = var.network
     }
   }

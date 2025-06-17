@@ -11,8 +11,8 @@ resource "google_storage_bucket" "this" {
   dynamic "cors" {
     for_each = each.value.cors_config != null ? [each.value.cors_config] : []
     content {
-      origin        = cors.value.origin
-      method        = cors.value.method
+      origin          = cors.value.origin
+      method          = cors.value.method
       response_header = cors.value.response_header
       max_age_seconds = cors.value.max_age_seconds
     }

@@ -46,3 +46,11 @@ variable "root_password" {
   sensitive   = true
 }
 
+variable "authorized_networks" {
+  description = "Cloud SQL Public IP에 접근을 허용할 CIDR 목록"
+  type = list(object({
+    name = string
+    cidr = string
+  }))
+}
+

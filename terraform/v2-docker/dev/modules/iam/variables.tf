@@ -11,7 +11,7 @@ variable "gcs_bucket_names" {
 variable "iam_project_bindings" {
   description = "프로젝트 권한과 멤버 바인딩"
   type = list(object({
-    role   = string
+    role    = string
     members = list(string)
   }))
 }

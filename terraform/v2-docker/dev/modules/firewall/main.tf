@@ -20,9 +20,9 @@ resource "google_compute_firewall" "allow_fe_from_internet" {
 
 # be 인스턴스 외부 접근 허용 (80, 443, 22)
 resource "google_compute_firewall" "allow_be_from_internet" {
-  project = var.project_id_dev
-  name    = "leafresh-firewall-be-from-internet"
-  network = var.vpc_name
+  project     = var.project_id_dev
+  name        = "leafresh-firewall-be-from-internet"
+  network     = var.vpc_name
   target_tags = [var.tag_be]
 
   allow {
@@ -32,7 +32,7 @@ resource "google_compute_firewall" "allow_be_from_internet" {
   allow {
     protocol = "icmp"
   }
-  
+
   source_ranges = ["0.0.0.0/0"]
 }
 
@@ -191,9 +191,9 @@ resource "google_compute_firewall" "allow_gpu2_to_be" {
 
 # IAP를 통한 SSH 접속 허용
 resource "google_compute_firewall" "allow_iap_ssh" {
-  project = var.project_id_dev
-  name    = "allow-iap-ssh"
-  network = var.vpc_name
+  project     = var.project_id_dev
+  name        = "allow-iap-ssh"
+  network     = var.vpc_name
   target_tags = [var.tag_fe, var.tag_be] # , var.tag_db]
 
   allow {

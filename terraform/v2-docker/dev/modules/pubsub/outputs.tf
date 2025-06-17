@@ -12,7 +12,7 @@
 
 output "pubsub_topic_names" {
   description = "생성된 모든 Pub/Sub Topic 이름들"
-  value       = {
+  value = {
     for topic_key, topic in google_pubsub_topic.be :
     topic_key => topic.name
   }
@@ -20,7 +20,7 @@ output "pubsub_topic_names" {
 
 output "pubsub_subscription_names" {
   description = "생성된 모든 Pub/Sub Subscription 이름들"
-  value       = {
+  value = {
     for sub_key, sub in google_pubsub_subscription.be :
     sub_key => sub.name
   }

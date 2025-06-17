@@ -309,25 +309,33 @@ variable "sql_allocated_storage" {
   default     = 10
 }
 
+variable "authorized_networks" {
+  description = "Cloud SQL Public IP에 접근을 허용할 CIDR 목록"
+  type = list(object({
+    name = string
+    cidr = string
+  }))
+  default = []
+}
 
 
 # Memorystore Redis 변수
-variable "redis_instance_name" {
-  description = "Memorystore Redis 인스턴스 이름"
-  type        = string
-}
-
-variable "redis_tier" {
-  description = "Memorystore Tier"
-  type        = string
-  default     = "BASIC"
-}
-
-variable "redis_memory_size_gb" {
-  description = "Redis 메모리 크기(GB)"
-  type        = number
-  default     = 2
-}
+#variable "redis_instance_name" {
+#  description = "Memorystore Redis 인스턴스 이름"
+#  type        = string
+#}
+#
+#variable "redis_tier" {
+#  description = "Memorystore Tier"
+#  type        = string
+#  default     = "BASIC"
+#}
+#
+#variable "redis_memory_size_gb" {
+#  description = "Redis 메모리 크기(GB)"
+#  type        = number
+#  default     = 2
+#}
 
 
 
@@ -346,12 +354,12 @@ variable "pubsub_topic_names" {
 variable "storage_buckets_config" {
   description = "A map of configurations for multiple GCS buckets."
   type = map(object({
-    name                = string
-    storage_class       = string
-    force_destroy       = bool
-    environment_label   = string
-    purpose_label       = string
-    cors_config         = object({
+    name              = string
+    storage_class     = string
+    force_destroy     = bool
+    environment_label = string
+    purpose_label     = string
+    cors_config = object({
       origin          = list(string)
       method          = list(string)
       response_header = list(string)
@@ -367,7 +375,7 @@ variable "storage_buckets_config" {
 variable "iam_project_bindings" {
   description = "프로젝트 권한과 멤버 바인딩"
   type = list(object({
-    role   = string
+    role    = string
     members = list(string)
   }))
 }

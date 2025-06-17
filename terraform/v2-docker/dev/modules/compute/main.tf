@@ -21,7 +21,7 @@ locals {
   #  })
 
   block_enabled_fe = true
-  env_fe   = "NEXT_PUBLIC_API_URL=https://springboot.${var.dns_record_name}"
+  env_fe           = "NEXT_PUBLIC_API_URL=https://springboot.${var.dns_record_name}"
   block_fe = local.block_enabled_fe ? (
     <<EOT
 
@@ -30,9 +30,9 @@ locals {
   EOT
   ) : ""
 
-  block_enabled_be   = true
-  env_path_be   = "./app/.env"
-  gcp_key_path_be      = "./app/leafresh-gcs.json"
+  block_enabled_be = true
+  env_path_be      = "./app/.env"
+  gcp_key_path_be  = "./app/leafresh-gcs.json"
   block_be = local.block_enabled_be ? (
     <<EOT
 
@@ -49,17 +49,17 @@ locals {
 # 템플릿 로컬 적용
 locals {
   docker_compose_fe = templatefile("${path.module}/nginx/docker-compose.tpl", {
-    image          = var.startup_fe_image
-    container_name = var.startup_fe_container_name
-    port           = var.startup_fe_nextjs_port
-    additional_block  = local.block_fe
+    image            = var.startup_fe_image
+    container_name   = var.startup_fe_container_name
+    port             = var.startup_fe_nextjs_port
+    additional_block = local.block_fe
   })
 
   docker_compose_be = templatefile("${path.module}/nginx/docker-compose.tpl", {
-    image          = var.startup_be_image
-    container_name = var.startup_be_container_name
-    port           = var.startup_be_springboot_port
-    additional_block  = local.block_be
+    image            = var.startup_be_image
+    container_name   = var.startup_be_container_name
+    port             = var.startup_be_springboot_port
+    additional_block = local.block_be
   })
 
 
@@ -82,14 +82,14 @@ locals {
   })
 
   startup_script_be = templatefile("${path.module}/be_startup.sh.tpl", {
-    domain         = "springboot.${var.dns_record_name}"
-    docker_compose = local.docker_compose_be
-    nginx_conf     = local.nginx_conf_be
-    port           = var.startup_be_springboot_port
-    secret_name    = var.startup_be_secret_name
+    domain           = "springboot.${var.dns_record_name}"
+    docker_compose   = local.docker_compose_be
+    nginx_conf       = local.nginx_conf_be
+    port             = var.startup_be_springboot_port
+    secret_name      = var.startup_be_secret_name
     secret_name_json = var.startup_be_secret_name_json
-    image          = var.startup_be_image
-    container_name = var.startup_be_container_name
+    image            = var.startup_be_image
+    container_name   = var.startup_be_container_name
   })
 
   #  startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
