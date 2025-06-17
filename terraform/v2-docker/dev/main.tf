@@ -36,7 +36,7 @@ module "network" {
 
   static_ip_name_fe = var.static_ip_name_fe
   static_ip_name_be = var.static_ip_name_be
-  static_ip_name_db = var.static_ip_name_db
+  # static_ip_name_db = var.static_ip_name_db
 
   subnet_name_fe = var.subnet_name_fe
   subnet_name_be = var.subnet_name_be
@@ -58,7 +58,7 @@ module "compute" {
 
   static_ip_fe = module.network.static_ip_fe
   static_ip_be = module.network.static_ip_be
-  static_ip_db = module.network.static_ip_db
+  # static_ip_db = module.network.static_ip_db
 
   static_internal_ip_fe = var.static_internal_ip_fe
   static_internal_ip_be = var.static_internal_ip_be
@@ -101,6 +101,7 @@ module "compute" {
   startup_db_redis_port = var.startup_db_redis_port
 }
 
+
 # Cloud SQL 모듈
 module "sql" {
   source              = "./modules/sql"
@@ -116,16 +117,6 @@ module "sql" {
   authorized_networks = var.sql_authorized_networks
 }
 
-# Memorystore Redis 모듈
-#module "memorystore" {
-#  source            = "./modules/memorystore"
-#  project_id        = var.project_id_dev
-#  region            = var.region
-#  network           = module.vpc.vpc_self_link
-#  instance_name     = var.redis_instance_name
-#  tier              = var.redis_tier
-#  memory_size_gb    = var.redis_memory_size_gb
-#}
 
 # Pub/Sub 모듈
 module "pubsub" {
@@ -144,14 +135,22 @@ module "storage" {
   buckets_config = var.storage_buckets_config
 }
 
-
+# service accounts 생성 모튤
+module "service_accounts" {
+  source           = "./modules/service_accounts"
+  project_id       = var.project_id_dev
+  service_accounts = var.service_accounts
+}
 
 # IAM 모듈
 module "iam" {
-  source                          = "./modules/iam"
-  project_id_dev                  = var.project_id_dev
-  gcs_bucket_names                = module.storage.bucket_names
-  iam_project_bindings            = var.iam_project_bindings
-  iam_storage_bindings_per_bucket = var.iam_storage_bindings_per_bucket
+  source                   = "./modules/iam"
+  project_id_dev           = var.project_id_dev
+  user_accounts            = var.user_accounts
+  service_account_bindings = module.service_accounts.bindings
+  iam_storage_bindings_per_bucket = {
+    for k, v in var.iam_storage_bindings_per_bucket : k => v
+  }
+  gcs_bucket_names = var.gcs_bucket_names
 }
 

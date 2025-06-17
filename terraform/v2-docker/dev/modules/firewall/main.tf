@@ -36,23 +36,23 @@ resource "google_compute_firewall" "allow_be_from_internet" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-# DB 인스턴스 외부 접근 허용 (22, 3306, 6379)
-#resource "google_compute_firewall" "allow_db_from_internet" {
-#  project = var.project_id_dev
-#  name    = "leafresh-firewall-db-from-internet"
-#  network = var.vpc_name
-#  target_tags = [var.tag_db]
-#
-#  allow {
-#    protocol = "tcp"
-#    ports    = ["22", "3306", "6379"]
-#  }
-#  allow {
-#    protocol = "icmp"
-#  }
-#  
-#  source_ranges = ["0.0.0.0/0"]
-#}
+# DB 인스턴스 외부 접근 허용 (22, 6379)
+resource "google_compute_firewall" "allow_db_from_internet" {
+  project     = var.project_id_dev
+  name        = "leafresh-firewall-db-from-internet"
+  network     = var.vpc_name
+  target_tags = [var.tag_db]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "6379"]
+  }
+  allow {
+    protocol = "icmp"
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+}
 
 # fe -> be 통신 허용
 resource "google_compute_firewall" "allow_fe_to_be" {
@@ -90,38 +90,38 @@ resource "google_compute_firewall" "allow_be_to_fe" {
 
 
 # be -> MySQL/Redis 통신 허용
-#resource "google_compute_firewall" "allow_be_to_db" {
-#  project     = var.project_id_dev
-#  name        = "leafresh-firewall-be-to-db"
-#  network     = var.vpc_name
-#  target_tags = [var.tag_db]
-#  source_tags = [var.tag_be]
-#
-#  allow {
-#    protocol = "tcp"
-#    ports    = ["3306", "6379"]
-#  }
-#  allow {
-#    protocol = "icmp"
-#  }
-#}
+resource "google_compute_firewall" "allow_be_to_db" {
+  project     = var.project_id_dev
+  name        = "leafresh-firewall-be-to-db"
+  network     = var.vpc_name
+  target_tags = [var.tag_db]
+  source_tags = [var.tag_be]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["3306", "6379"]
+  }
+  allow {
+    protocol = "icmp"
+  }
+}
 
 # MySQL/Redis -> be 통신 허용 (DB 응답)
-#resource "google_compute_firewall" "allow_db_to_be" {
-#  project     = var.project_id_dev
-#  name        = "leafresh-firewall-db-to-be"
-#  network     = var.vpc_name
-#  target_tags = [var.tag_be]
-#  source_tags = [var.tag_db]
-#
-#  allow {
-#    protocol = "tcp"
-#    ports    = ["8080"]
-#  }
-#  allow {
-#    protocol = "icmp"
-#  }
-#}
+resource "google_compute_firewall" "allow_db_to_be" {
+  project     = var.project_id_dev
+  name        = "leafresh-firewall-db-to-be"
+  network     = var.vpc_name
+  target_tags = [var.tag_be]
+  source_tags = [var.tag_db]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["8080"]
+  }
+  allow {
+    protocol = "icmp"
+  }
+}
 
 # be <-> GPU instance VPC 통신 허용
 # 기존 GPU VPC에 대한 정보가 없으므로, 해당 VPC의 CIDR 범위를 source_ranges로 사용
@@ -194,7 +194,7 @@ resource "google_compute_firewall" "allow_iap_ssh" {
   project     = var.project_id_dev
   name        = "allow-iap-ssh"
   network     = var.vpc_name
-  target_tags = [var.tag_fe, var.tag_be] # , var.tag_db]
+  target_tags = [var.tag_fe, var.tag_be, var.tag_db]
 
   allow {
     protocol = "tcp"

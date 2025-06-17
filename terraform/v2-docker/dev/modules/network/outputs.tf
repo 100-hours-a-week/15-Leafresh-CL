@@ -10,10 +10,10 @@ output "subnet_be_self_link" {
   value       = google_compute_subnetwork.public_be.self_link
 }
 
-#output "subnet_db_self_link" {
-#  description = "MySQL/Redis Private Subnet의 Self Link"
-#  value       = google_compute_subnetwork.public_db.self_link
-#}
+output "subnet_db_self_link" {
+  description = "MySQL/Redis Private Subnet의 Self Link"
+  value       = google_compute_subnetwork.private_db.self_link
+}
 
 # output "nat_gateway_ip" {
 #   description = "NAT Gateway의 외부 IP 주소"

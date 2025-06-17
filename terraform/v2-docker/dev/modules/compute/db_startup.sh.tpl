@@ -24,8 +24,6 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 
 # .env 파일 생성
 cat << ENV > /home/ubuntu/.env
-MYSQL_ROOT_PASSWORD=${mysql_root_password}
-MYSQL_DATABASE=${mysql_database}
 docker_local_cache_host=${redis_host}
 docker_local_cache_port=${redis_port}
 ENV

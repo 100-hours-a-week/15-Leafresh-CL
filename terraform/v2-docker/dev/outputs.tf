@@ -38,13 +38,13 @@ output "sql_private_ip" {
   value       = module.sql.private_ip_address
 }
 
-output "redis_host" {
-  description = "Memorystore Redis 호스트 주소"
-  value       = module.memorystore.host
-}
-
-output "redis_port" {
-  description = "Memorystore Redis 포트"
-  value       = module.memorystore.port
-}
+#output "redis_host" {
+#  description = "Memorystore Redis 호스트 주소"
+#  value       = module.memorystore.host
+#}
+#
+#output "redis_port" {
+#  description = "Memorystore Redis 포트"
+#  value       = module.memorystore.port
+#}
 

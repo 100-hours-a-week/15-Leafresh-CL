@@ -17,13 +17,13 @@ resource "google_compute_subnetwork" "public_be" {
   network       = var.vpc_self_link
 }
 
-#resource "google_compute_subnetwork" "public_db" {
-#  project       = var.project_id_dev
-#  name          = var.subnet_name_db
-#  ip_cidr_range = var.subnet_cidr_db
-#  region        = var.region
-#  network       = var.vpc_self_link
-#}
+resource "google_compute_subnetwork" "private_db" {
+  project       = var.project_id_dev
+  name          = var.subnet_name_db
+  ip_cidr_range = var.subnet_cidr_db
+  region        = var.region
+  network       = var.vpc_self_link
+}
 
 
 # NAT Gateway 정의

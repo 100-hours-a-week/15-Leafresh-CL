@@ -95,8 +95,8 @@ locals {
   startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
     # mysql_root_password = var.startup_db_mysql_root_password
     # mysql_database      = var.startup_db_mysql_database_name
-    redis_port          = var.startup_db_redis_port
-    redis_host          = var.startup_db_redis_host
+    redis_port = var.startup_db_redis_port
+    redis_host = var.startup_db_redis_host
   })
 }
 

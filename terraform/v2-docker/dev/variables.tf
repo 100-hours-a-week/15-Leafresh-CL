@@ -369,23 +369,35 @@ variable "storage_buckets_config" {
 }
 
 
+# service account 변수
+variable "service_accounts" {
+  description = "생성할 서비스 계정과 부여할 역할 목록"
+  type = list(object({
+    account_id   = string
+    display_name = string
+    roles        = list(string)
+  }))
+}
 
 
 # iam 변수
-variable "iam_project_bindings" {
-  description = "프로젝트 권한과 멤버 바인딩"
+variable "user_accounts" {
+  description = "부여할 사용자 계정과 역할 목록"
   type = list(object({
-    role    = string
-    members = list(string)
+    member = string
+    roles  = list(string)
   }))
 }
 
 variable "iam_storage_bindings_per_bucket" {
-  description = "A map where keys are GCS bucket config keys and values are lists of IAM bindings for that bucket."
+  description = "버킷 키별로 부여할 IAM 역할·멤버 리스트"
   type = map(list(object({
     role    = string
     members = list(string)
   })))
-  default = {}
 }
 
+variable "gcs_bucket_names" {
+  description = "실제 버킷 이름 맵"
+  type        = map(string)
+}

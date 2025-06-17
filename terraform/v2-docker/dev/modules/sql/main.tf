@@ -15,7 +15,7 @@ resource "google_sql_database_instance" "default" {
       ipv4_enabled = true
 
       dynamic "authorized_networks" {
-        for_ezch = var.authorized_networks
+        for_each = var.authorized_networks
         content {
           name  = authorized_networks.value.name
           value = authorized_networks.value.cidr
@@ -34,10 +34,10 @@ resource "google_sql_database" "default" {
 }
 
 resource "google_sql_user" "root" {
-  name     = "root"
-  instance = google_sql_database_instance.default.name
-  project  = var.project_id
-  host     = "%"
-  password = var.root_password
+  name        = "root"
+  instance    = google_sql_database_instance.default.name
+  project     = var.project_id
+  host        = "%"
+  password_wo = var.root_password
 }
 
