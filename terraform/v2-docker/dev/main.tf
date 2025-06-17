@@ -13,7 +13,7 @@ module "firewall" {
 
   tag_fe = var.tag_fe
   tag_be = var.tag_be
-  # tag_db = var.tag_db
+  tag_db = var.tag_db
 
   vpc_cidr_block_gpu1 = var.vpc_cidr_block_gpu1
   vpc_cidr_block_gpu2 = var.vpc_cidr_block_gpu2
@@ -36,15 +36,15 @@ module "network" {
 
   static_ip_name_fe = var.static_ip_name_fe
   static_ip_name_be = var.static_ip_name_be
-  # static_ip_name_db = var.static_ip_name_db
+  static_ip_name_db = var.static_ip_name_db
 
   subnet_name_fe = var.subnet_name_fe
   subnet_name_be = var.subnet_name_be
-  # subnet_name_db = var.subnet_name_db
+  subnet_name_db = var.subnet_name_db
 
   subnet_cidr_fe = var.subnet_cidr_fe
   subnet_cidr_be = var.subnet_cidr_be
-  # subnet_cidr_db = var.subnet_cidr_db
+  subnet_cidr_db = var.subnet_cidr_db
 
   vpc_self_link = module.vpc.vpc_self_link
 }

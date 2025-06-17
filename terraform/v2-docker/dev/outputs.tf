@@ -22,11 +22,11 @@ output "springboot_internal_ip" {
 #  description = "Spring Boot 인스턴스의 내부 IP 주소"
 #  value       = module.compute.db_external_ip
 #}
-#
-#output "db_internal_ip" {
-#  description = "MySQL/Redis 인스턴스의 내부 IP 주소"
-#  value       = module.compute.db_internal_ip
-#}
+
+output "db_internal_ip" {
+  description = "MySQL/Redis 인스턴스의 내부 IP 주소"
+  value       = module.compute.db_internal_ip
+}
 
 output "pubsub_topic_names" {
   description = "생성된 모든 Pub/Sub Topic 이름들"

@@ -16,9 +16,9 @@ locals {
     role = "be"
   })
 
-  #  labels_db = merge(local.common_labels, {
-  #    role = "db"
-  #  })
+  labels_db = merge(local.common_labels, {
+    role = "db"
+  })
 
   block_enabled_fe = true
   env_fe           = "NEXT_PUBLIC_API_URL=https://springboot.${var.dns_record_name}"
@@ -92,12 +92,12 @@ locals {
     container_name   = var.startup_be_container_name
   })
 
-  #  startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
-  #    mysql_root_password = var.startup_db_mysql_root_password
-  #    mysql_database      = var.startup_db_mysql_database_name
-  #    redis_port          = var.startup_db_redis_port
-  #    redis_host          = var.startup_db_redis_host
-  #  })
+  startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
+    # mysql_root_password = var.startup_db_mysql_root_password
+    # mysql_database      = var.startup_db_mysql_database_name
+    redis_port          = var.startup_db_redis_port
+    redis_host          = var.startup_db_redis_host
+  })
 }
 
 
@@ -167,36 +167,36 @@ resource "google_compute_instance" "be" {
 }
 
 # MySQL 및 Redis GCE 인스턴스 (하나의 인스턴스에서 실행)
-#resource "google_compute_instance" "db" {
-#  project      = var.project_id_dev
-#  name         = var.gce_name_db
-#  machine_type = var.gce_machine_type_db
-#  zone         = var.zone
-#  tags         = [var.tag_db]
-#
-#  boot_disk {
-#    initialize_params {
-#      image = var.gce_image
-#      size  = var.gce_disk_size + 25
-#    }
-#  }
-#
-#  network_interface {
-#    subnetwork = var.subnet_db_self_link
-#    network_ip = var.static_internal_ip_db
-#    access_config {
-#      nat_ip = var.static_ip_db
-#    }
-#  }
-#
-#  metadata_startup_script = local.startup_script_db
-#
-#  service_account {
-#    scopes = ["cloud-platform"]
-#  }
-#
-#  labels = local.labels_db
-#}
+resource "google_compute_instance" "db" {
+  project      = var.project_id_dev
+  name         = var.gce_name_db
+  machine_type = var.gce_machine_type_db
+  zone         = var.zone
+  tags         = [var.tag_db]
+
+  boot_disk {
+    initialize_params {
+      image = var.gce_image
+      size  = var.gce_disk_size + 25
+    }
+  }
+
+  network_interface {
+    subnetwork = var.subnet_db_self_link
+    network_ip = var.static_internal_ip_db
+    #    access_config {
+    #      nat_ip = var.static_ip_db
+    #    }
+  }
+
+  metadata_startup_script = local.startup_script_db
+
+  service_account {
+    scopes = ["cloud-platform"]
+  }
+
+  labels = local.labels_db
+}
 
 # Cloud DNS A 레코드 추가 (Next.js 인스턴스 외부 IP를 가리키도록)
 resource "google_dns_record_set" "nextjs_dns_record" {

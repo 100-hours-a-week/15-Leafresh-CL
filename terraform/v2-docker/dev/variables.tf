@@ -53,10 +53,10 @@ variable "subnet_cidr_be" {
   type        = string
 }
 
-#variable "subnet_cidr_db" {
-#  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
-#  type        = string
-#}
+variable "subnet_cidr_db" {
+  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
+  type        = string
+}
 
 variable "vpc_name_gpu1" {
   description = "기존 GPU1 instance VPC의 이름"
@@ -92,10 +92,10 @@ variable "subnet_name_be" {
   type        = string
 }
 
-#variable "subnet_name_db" {
-#  description = "DB 서브넷 이름"
-#  type        = string
-#}
+variable "subnet_name_db" {
+  description = "DB 서브넷 이름"
+  type        = string
+}
 
 # variable "nat_ip" {
 #   description = "NAT IP 주소"
@@ -140,10 +140,10 @@ variable "static_internal_ip_be" {
   type        = string
 }
 
-#variable "static_internal_ip_db" {
-#  description = "DB 인스턴스의 내부 IP"
-#  type        = string
-#}
+variable "static_internal_ip_db" {
+  description = "DB 인스턴스의 내부 IP"
+  type        = string
+}
 
 variable "tag_fe" {
   description = "Next.js 인스턴스에 적용할 네트워크 태그"
@@ -155,10 +155,10 @@ variable "tag_be" {
   type        = string
 }
 
-#variable "tag_db" {
-#  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
-#  type        = string
-#}
+variable "tag_db" {
+  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
 
 variable "gce_name_fe" {
   description = "fe 인스턴스 이름"
@@ -170,10 +170,10 @@ variable "gce_name_be" {
   type        = string
 }
 
-#variable "gce_name_db" {
-#  description = "db 인스턴스 이름"
-#  type        = string
-#}
+variable "gce_name_db" {
+  description = "db 인스턴스 이름"
+  type        = string
+}
 
 variable "gce_machine_type_fe" {
   description = "GCE FE용 VM 타입"
@@ -185,10 +185,10 @@ variable "gce_machine_type_be" {
   type        = string
 }
 
-#variable "gce_machine_type_db" {
-#  description = "GCE BE용 VM 타입"
-#  type        = string
-#}
+variable "gce_machine_type_db" {
+  description = "GCE BE용 VM 타입"
+  type        = string
+}
 
 variable "dns_zone_name" {
   description = "기존 Cloud DNS Zone의 이름"
@@ -256,21 +256,21 @@ variable "startup_be_image" {
 #  description = "DB 인스턴스 루트 계정 비밀번호"
 #  type        = string
 #}
-#
+
 #variable "startup_db_mysql_database_name" {
 #  description = "DB 인스턴스 데이터베이스 이름"
 #  type        = string
 #}
-#
-#variable "startup_db_redis_port" {
-#  description = "DB 인스턴스 redis 포트 번호"
-#  type        = string
-#}
-#
-#variable "startup_db_redis_host" {
-#  description = "DB 인스턴스 redis 호스트 이름"
-#  type        = string
-#}
+
+variable "startup_db_redis_port" {
+  description = "DB 인스턴스 redis 포트 번호"
+  type        = string
+}
+
+variable "startup_db_redis_host" {
+  description = "DB 인스턴스 redis 호스트 이름"
+  type        = string
+}
 
 
 
@@ -309,7 +309,7 @@ variable "sql_allocated_storage" {
   default     = 10
 }
 
-variable "authorized_networks" {
+variable "sql_authorized_networks" {
   description = "Cloud SQL Public IP에 접근을 허용할 CIDR 목록"
   type = list(object({
     name = string
