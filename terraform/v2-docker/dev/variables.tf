@@ -44,6 +44,10 @@ variable "zone" {
 #  type        = string
 #}
 
+variable "common_labels" {
+  description = "리소스별 공통 라벨"
+  type        = map(string)
+}
 
 
 # firewall 변수

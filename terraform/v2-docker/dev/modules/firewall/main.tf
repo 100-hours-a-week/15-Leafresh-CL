@@ -1,5 +1,13 @@
 # modules/firewall/main.tf
 
+locals {
+  merged_labels = merge({}, {
+    purpose = "communication"
+    role    = "firewall"
+  })
+}
+
+
 # fe 인스턴스 외부 접근 허용 (80, 443, 22)
 resource "google_compute_firewall" "allow_fe_from_internet" {
   project     = var.project_id_dev

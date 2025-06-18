@@ -104,10 +104,11 @@ module "compute" {
 
 # Cloud SQL 모듈
 module "sql" {
-  source              = "./modules/sql"
-  project_id          = var.project_id_dev
-  region              = var.region
-  network             = module.vpc.vpc_self_link
+  source     = "./modules/sql"
+  project_id = var.project_id_dev
+  region     = var.region
+  network    = module.vpc.vpc_self_link
+
   db_instance_name    = var.sql_instance_name
   db_tier             = var.sql_tier
   database_version    = var.sql_database_version
@@ -120,9 +121,10 @@ module "sql" {
 
 # Pub/Sub 모듈
 module "pubsub" {
-  source             = "./modules/pubsub"
-  project_id_dev     = var.project_id_dev
-  project_number     = var.project_number
+  source         = "./modules/pubsub"
+  project_id_dev = var.project_id_dev
+  project_number = var.project_number
+
   pubsub_topic_names = var.pubsub_topic_names
 }
 
@@ -132,6 +134,7 @@ module "storage" {
   source         = "./modules/storage"
   region         = var.region
   project_id_dev = var.project_id_dev
+
   buckets_config = var.storage_buckets_config
 }
 

@@ -1,5 +1,13 @@
 # modules/network/main.tf
 
+locals {
+  merged_labels = merge({}, {
+    purpose = "communication"
+    role    = "subnet"
+  })
+}
+
+
 # Subnet 정의
 resource "google_compute_subnetwork" "public_fe" {
   project       = var.project_id_dev
@@ -71,10 +79,7 @@ resource "google_compute_address" "static_ip_fe" {
   region  = var.region
   project = var.project_id_dev
 
-  labels = {
-    role = "fe"
-    env  = "dev"
-  }
+  labels = local.merged_labels
 
   # address = "34.47.75.62"
 }
@@ -85,10 +90,7 @@ resource "google_compute_address" "static_ip_be" {
   region  = var.region
   project = var.project_id_dev
 
-  labels = {
-    role = "be"
-    env  = "dev"
-  }
+  labels = local.merged_labels
 
   # address = "34.64.183.21"
 }

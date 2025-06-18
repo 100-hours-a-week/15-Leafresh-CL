@@ -18,10 +18,9 @@ resource "google_storage_bucket" "this" {
     }
   }
 
-  labels = merge(
-    {
-      environment = each.value.environment_label
-      purpose     = each.value.purpose_label
+  labels = merge({}, {
+    env     = each.value.environment_label
+    purpose = each.value.purpose_label
     }
   )
 }

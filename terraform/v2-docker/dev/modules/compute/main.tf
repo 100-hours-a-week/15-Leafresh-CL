@@ -2,21 +2,15 @@
 
 # labels 적용
 locals {
-  common_labels = {
-    app  = "leafresh"
-    env  = "dev"
-    team = "infra"
-  }
-
-  labels_fe = merge(local.common_labels, {
+  labels_fe = merge({}, {
     role = "fe"
   })
 
-  labels_be = merge(local.common_labels, {
+  labels_be = merge({}, {
     role = "be"
   })
 
-  labels_db = merge(local.common_labels, {
+  labels_db = merge({}, {
     role = "db"
   })
 

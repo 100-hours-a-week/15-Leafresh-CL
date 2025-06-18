@@ -6,12 +6,11 @@ resource "google_pubsub_topic" "be" {
   name    = each.key
   project = var.project_id_dev
 
-  labels = {
+  labels = merge({}, {
     role    = "topic"
     purpose = "event-stream"
-    env     = "dev"
-    app     = "leafresh"
-  }
+    }
+  )
 }
 
 resource "google_pubsub_subscription" "be" {
@@ -23,12 +22,11 @@ resource "google_pubsub_subscription" "be" {
 
   ack_deadline_seconds = 20
 
-  labels = {
+  labels = merge({}, {
     role    = "subscription"
     purpose = "event-consumer"
-    env     = "dev"
-    app     = "leafresh"
-  }
+    }
+  )
 
   depends_on = [
     google_pubsub_topic.be

@@ -1,6 +1,5 @@
 # modules/gcs_buckets/variables.tf
 
-
 variable "project_id_dev" {
   description = "GCP 프로젝트 ID"
   type        = string
