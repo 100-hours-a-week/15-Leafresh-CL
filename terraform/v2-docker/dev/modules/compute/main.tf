@@ -14,6 +14,10 @@ locals {
     role = "db"
   })
 
+  labels_vault = merge({}, {
+    role = "vault"
+  })
+
   block_enabled_fe = true
   env_fe           = "NEXT_PUBLIC_API_URL=https://springboot.${var.dns_record_name}"
   block_fe = local.block_enabled_fe ? (
@@ -37,6 +41,20 @@ locals {
       - ${local.gcp_key_path_be}:${local.gcp_key_path_be}:ro
   EOT
   ) : ""
+
+  block_enabled_vault = true
+  env_vault           = ""
+  block_vault = local.block_enabled_vault ? (
+    <<EOT
+
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./config:/vault/config
+      - ./file:/vault/file
+      - ./logs:/vault/logs
+  EOT
+  ) : ""
 }
 
 
@@ -45,26 +63,38 @@ locals {
   docker_compose_fe = templatefile("${path.module}/nginx/docker-compose.tpl", {
     image            = var.startup_fe_image
     container_name   = var.startup_fe_container_name
-    port             = var.startup_fe_nextjs_port
+    port             = var.startup_fe_port
     additional_block = local.block_fe
   })
 
   docker_compose_be = templatefile("${path.module}/nginx/docker-compose.tpl", {
     image            = var.startup_be_image
     container_name   = var.startup_be_container_name
-    port             = var.startup_be_springboot_port
+    port             = var.startup_be_port
     additional_block = local.block_be
+  })
+
+  docker_compose_vault = templatefile("${path.module}/nginx/docker-compose.tpl", {
+    image            = var.startup_vault_image
+    container_name   = var.startup_vault_container_name
+    port             = var.startup_vault_port
+    additional_block = local.block_vault
   })
 
 
   nginx_conf_fe = templatefile("${path.module}/nginx/default_fe.conf.tpl", {
     domain = var.dns_record_name
-    port   = 3000
+    port   = var.startup_fe_port
   })
 
   nginx_conf_be = templatefile("${path.module}/nginx/default_be.conf.tpl", {
     domain = "springboot.${var.dns_record_name}"
-    port   = 8080
+    port   = var.startup_be_port
+  })
+
+  nginx_conf_vault = templatefile("${path.module}/nginx/default_vault.conf.tpl", {
+    domain = "vault.${var.dns_record_name}"
+    port   = var.startup_vault_port
   })
 
 
@@ -79,7 +109,7 @@ locals {
     domain           = "springboot.${var.dns_record_name}"
     docker_compose   = local.docker_compose_be
     nginx_conf       = local.nginx_conf_be
-    port             = var.startup_be_springboot_port
+    port             = var.startup_be_port
     secret_name      = var.startup_be_secret_name
     secret_name_json = var.startup_be_secret_name_json
     image            = var.startup_be_image
@@ -87,26 +117,31 @@ locals {
   })
 
   startup_script_db = templatefile("${path.module}/db_startup.sh.tpl", {
-    # mysql_root_password = var.startup_db_mysql_root_password
-    # mysql_database      = var.startup_db_mysql_database_name
     redis_port = var.startup_db_redis_port
     redis_host = var.startup_db_redis_host
+  })
+
+  startup_script_vault = templatefile("${path.module}/vault_startup.sh.tpl", {
+    domain         = "vault.${var.dns_record_name}"
+    docker_compose = local.docker_compose_vault
+    nginx_conf     = local.nginx_conf_vault
+    container_name = var.startup_vault_container_name
   })
 }
 
 
 # Next.js GCE 인스턴스
 resource "google_compute_instance" "fe" {
-  project      = var.project_id_dev
-  name         = var.gce_name_fe
-  machine_type = var.gce_machine_type_fe
+  project      = var.project_id
+  name         = var.name_fe
+  machine_type = var.machine_type_fe
   zone         = var.zone
   tags         = [var.tag_fe]
 
   boot_disk {
     initialize_params {
-      image = var.gce_image
-      size  = var.gce_disk_size
+      image = var.image
+      size  = var.disk_size
     }
   }
 
@@ -121,7 +156,7 @@ resource "google_compute_instance" "fe" {
   metadata_startup_script = local.startup_script_fe
 
   service_account {
-    scopes = ["cloud-platform"] # 전체 권한 부여 기능, 수정 필요 
+    scopes = ["cloud-platform"] # 전체 권한 부여 기능, 수정 필요
   }
 
   labels = local.labels_fe
@@ -130,16 +165,16 @@ resource "google_compute_instance" "fe" {
 
 # Spring Boot GCE 인스턴스
 resource "google_compute_instance" "be" {
-  project      = var.project_id_dev
-  name         = var.gce_name_be
-  machine_type = var.gce_machine_type_be
+  project      = var.project_id
+  name         = var.name_be
+  machine_type = var.machine_type_be
   zone         = var.zone
   tags         = [var.tag_be]
 
   boot_disk {
     initialize_params {
-      image = var.gce_image
-      size  = var.gce_disk_size
+      image = var.image
+      size  = var.disk_size
     }
   }
 
@@ -162,25 +197,22 @@ resource "google_compute_instance" "be" {
 
 # MySQL 및 Redis GCE 인스턴스 (하나의 인스턴스에서 실행)
 resource "google_compute_instance" "db" {
-  project      = var.project_id_dev
-  name         = var.gce_name_db
-  machine_type = var.gce_machine_type_db
+  project      = var.project_id
+  name         = var.name_db
+  machine_type = var.machine_type_db
   zone         = var.zone
   tags         = [var.tag_db]
 
   boot_disk {
     initialize_params {
-      image = var.gce_image
-      size  = var.gce_disk_size + 25
+      image = var.image
+      size  = var.disk_size + 25
     }
   }
 
   network_interface {
     subnetwork = var.subnet_db_self_link
     network_ip = var.static_internal_ip_db
-    #    access_config {
-    #      nat_ip = var.static_ip_db
-    #    }
   }
 
   metadata_startup_script = local.startup_script_db
@@ -192,8 +224,39 @@ resource "google_compute_instance" "db" {
   labels = local.labels_db
 }
 
+resource "google_compute_instance" "vault" {
+  project      = var.project_id
+  name         = var.name_vault
+  machine_type = var.machine_type_vault
+  zone         = var.zone
+  tags         = [var.tag_vault]
+
+  boot_disk {
+    initialize_params {
+      image = var.image
+      size  = var.disk_size
+    }
+  }
+
+  network_interface {
+    subnetwork = var.subnet_vault_self_link
+    access_config {
+      nat_ip = var.static_ip_vault
+    }
+  }
+
+  metadata_startup_script = local.startup_script_vault
+
+  service_account {
+    scopes = ["cloud-platform"]
+  }
+
+  labels = local.labels_vault
+}
+
+
 # Cloud DNS A 레코드 추가 (Next.js 인스턴스 외부 IP를 가리키도록)
-resource "google_dns_record_set" "nextjs_dns_record" {
+resource "google_dns_record_set" "fe" {
   project      = "leafresh"
   managed_zone = var.dns_zone_name
   name         = "${var.dns_record_name}."
@@ -203,7 +266,7 @@ resource "google_dns_record_set" "nextjs_dns_record" {
 }
 
 # Cloud DNS A 레코드 추가 (Spring Boot BE 인스턴스 외부 IP를 가리키도록)
-resource "google_dns_record_set" "springboot_dns_record" {
+resource "google_dns_record_set" "be" {
   project      = "leafresh"
   managed_zone = var.dns_zone_name
   name         = "be.${var.dns_record_name}." # 예: be.dev-leafresh.app..
@@ -212,3 +275,11 @@ resource "google_dns_record_set" "springboot_dns_record" {
   rrdatas      = [google_compute_instance.be.network_interface[0].access_config[0].nat_ip]
 }
 
+resource "google_dns_record_set" "vault" {
+  project      = "leafresh"
+  managed_zone = var.dns_zone_name
+  name         = "vault.${var.dns_record_name}." # 예: be.dev-leafresh.app..
+  type         = "A"
+  ttl          = 18000
+  rrdatas      = [google_compute_instance.vault.network_interface[0].access_config[0].nat_ip]
+}

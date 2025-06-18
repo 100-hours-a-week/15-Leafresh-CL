@@ -1,6 +1,6 @@
 # modules/firewall/variables.tf
 
-variable "project_id_dev" {
+variable "project_id" {
   description = "GCP 프로젝트 ID"
   type        = string
 }
@@ -20,30 +20,15 @@ variable "tag_be" {
   type        = string
 }
 
-variable "tag_db" {
-  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+variable "tag_vault" {
+  description = "Vault 인스턴스에 적용할 네트워크 태그"
   type        = string
 }
 
-# variable "vpc_name_gpu1" {
-#   description = "기존 gpu1 instance VPC의 이름"
-#   type        = string
-# }
-
-#variable "service_account_gpu1" {
-#  description = "기존 gpu1 instance VPC의 서비스 계정"
-#  type        = string
-#}
-
-# variable "vpc_name_gpu2" {
-#   description = "기존 gpu2 instance VPC의 이름"
-#   type        = string
-# }
-
-#variable "service_account_gpu2" {
-#  description = "기존 gpu2 instance VPC의 서비스 계정"
-#  type        = string
-#}
+variable "tag_db" {
+  description = "Redis 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
 
 variable "vpc_cidr_block_gpu1" {
   description = "GPU1 VPC의 CIDR"

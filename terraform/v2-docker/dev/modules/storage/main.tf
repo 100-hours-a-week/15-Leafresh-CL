@@ -2,7 +2,7 @@ resource "google_storage_bucket" "this" {
   for_each = var.buckets_config
 
   location                    = var.region
-  project                     = var.project_id_dev
+  project                     = var.project_id
   name                        = each.value.name
   storage_class               = each.value.storage_class
   force_destroy               = each.value.force_destroy

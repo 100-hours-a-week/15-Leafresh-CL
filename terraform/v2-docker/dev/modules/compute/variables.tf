@@ -1,6 +1,6 @@
 # modules/compute/variables.tf
 
-variable "project_id_dev" {
+variable "project_id" {
   description = "GCP 프로젝트 ID"
   type        = string
 }
@@ -25,10 +25,10 @@ variable "static_ip_be" {
   type        = string
 }
 
-#variable "static_ip_db" {
-#  description = "DB 외부 IP 이름"
-#  type        = string
-#}
+variable "static_ip_vault" {
+  description = "Vault 외부 IP 이름"
+  type        = string
+}
 
 variable "static_internal_ip_fe" {
   description = "Next.js 인스턴스의 내부 IP"
@@ -60,33 +60,48 @@ variable "subnet_db_self_link" {
   type        = string
 }
 
+variable "subnet_vault_self_link" {
+  description = "Vault Public Subnet의 Self Link"
+  type        = string
+}
+
 variable "tag_fe" {
   description = "Next.js 인스턴스에 적용할 네트워크 태그"
   type        = string
 }
 
 variable "tag_be" {
-  description = "Spring Boot 인스턴스에 적용할 네트워크 태그"
+  description = "SpringBoot 인스턴스에 적용할 네트워크 태그"
   type        = string
 }
 
 variable "tag_db" {
-  description = "MySQL/Redis 인스턴스에 적용할 네트워크 태그"
+  description = "Redis 인스턴스에 적용할 네트워크 태그"
   type        = string
 }
 
-variable "gce_name_fe" {
+variable "tag_vault" {
+  description = "vault 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
+
+variable "name_fe" {
   description = "fe 인스턴스 이름"
   type        = string
 }
 
-variable "gce_name_be" {
+variable "name_be" {
   description = "be 인스턴스 이름"
   type        = string
 }
 
-variable "gce_name_db" {
+variable "name_db" {
   description = "db 인스턴스 이름"
+  type        = string
+}
+
+variable "name_vault" {
+  description = "vault 인스턴스 이름"
   type        = string
 }
 
@@ -100,32 +115,37 @@ variable "dns_record_name" {
   type        = string
 }
 
-variable "gce_machine_type_fe" {
+variable "machine_type_fe" {
   description = "GCE FE용 VM 타입"
   type        = string
 }
 
-variable "gce_machine_type_be" {
+variable "machine_type_be" {
   description = "GCE BE용 VM 타입"
   type        = string
 }
 
-variable "gce_machine_type_db" {
+variable "machine_type_db" {
   description = "GCE BE용 VM 타입"
   type        = string
 }
 
-variable "gce_image" {
+variable "machine_type_vault" {
+  description = "GCE vault용 VM 타입"
+  type        = string
+}
+
+variable "image" {
   description = "GCE VM 이미지"
   type        = string
 }
 
-variable "gce_disk_size" {
+variable "disk_size" {
   description = "GCE VM 디스크 크기"
   type        = string
 }
 
-variable "startup_fe_nextjs_port" {
+variable "startup_fe_port" {
   description = "FE 인스턴스 포트 번호"
   type        = string
 }
@@ -140,7 +160,7 @@ variable "startup_fe_image" {
   type        = string
 }
 
-variable "startup_be_springboot_port" {
+variable "startup_be_port" {
   description = "BE 인스턴스 포트 번호"
   type        = string
 }
@@ -163,6 +183,21 @@ variable "startup_be_container_name" {
 }
 
 variable "startup_be_image" {
+  description = "BE 인스턴스 도커 사용 이미지 이름"
+  type        = string
+}
+
+variable "startup_vault_port" {
+  description = "BE 인스턴스 포트 번호"
+  type        = string
+}
+
+variable "startup_vault_container_name" {
+  description = "BE 인스턴스 도커 컨테이너 이름 설정"
+  type        = string
+}
+
+variable "startup_vault_image" {
   description = "BE 인스턴스 도커 사용 이미지 이름"
   type        = string
 }

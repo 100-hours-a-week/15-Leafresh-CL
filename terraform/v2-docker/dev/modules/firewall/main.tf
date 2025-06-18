@@ -10,7 +10,7 @@ locals {
 
 # fe 인스턴스 외부 접근 허용 (80, 443, 22)
 resource "google_compute_firewall" "allow_fe_from_internet" {
-  project     = var.project_id_dev
+  project     = var.project_id
   name        = "leafresh-firewall-fe-from-internet"
   network     = var.vpc_name
   target_tags = [var.tag_fe] ### target이 기준이다
@@ -28,7 +28,7 @@ resource "google_compute_firewall" "allow_fe_from_internet" {
 
 # be 인스턴스 외부 접근 허용 (80, 443, 22)
 resource "google_compute_firewall" "allow_be_from_internet" {
-  project     = var.project_id_dev
+  project     = var.project_id
   name        = "leafresh-firewall-be-from-internet"
   network     = var.vpc_name
   target_tags = [var.tag_be]
@@ -45,26 +45,26 @@ resource "google_compute_firewall" "allow_be_from_internet" {
 }
 
 # DB 인스턴스 외부 접근 허용 (22, 6379)
-#resource "google_compute_firewall" "allow_db_from_internet" {
-#  project     = var.project_id_dev
-#  name        = "leafresh-firewall-db-from-internet"
-#  network     = var.vpc_name
-#  target_tags = [var.tag_db]
-#
-#  allow {
-#    protocol = "tcp"
-#    ports    = ["22", "6379"]
-#  }
-#  allow {
-#    protocol = "icmp"
-#  }
-#
-#  source_ranges = ["0.0.0.0/0"]
-#}
+resource "google_compute_firewall" "allow_db_from_internet" {
+  project     = var.project_id
+  name        = "leafresh-firewall-vault-from-internet"
+  network     = var.vpc_name
+  target_tags = [var.tag_vault]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "8200"]
+  }
+  allow {
+    protocol = "icmp"
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+}
 
 # fe -> be 통신 허용
 resource "google_compute_firewall" "allow_fe_to_be" {
-  project     = var.project_id_dev
+  project     = var.project_id
   name        = "leafresh-firewall-fe-to-be"
   network     = var.vpc_name
   target_tags = [var.tag_be]
@@ -81,7 +81,7 @@ resource "google_compute_firewall" "allow_fe_to_be" {
 
 # be -> fe 통신 허용
 resource "google_compute_firewall" "allow_be_to_fe" {
-  project     = var.project_id_dev
+  project     = var.project_id
   name        = "leafresh-firewall-be-to-fe"
   network     = var.vpc_name
   target_tags = [var.tag_fe]
@@ -99,7 +99,7 @@ resource "google_compute_firewall" "allow_be_to_fe" {
 
 # be -> Redis 통신 허용
 resource "google_compute_firewall" "allow_be_to_db" {
-  project     = var.project_id_dev
+  project     = var.project_id
   name        = "leafresh-firewall-be-to-db"
   network     = var.vpc_name
   target_tags = [var.tag_db]
@@ -114,29 +114,12 @@ resource "google_compute_firewall" "allow_be_to_db" {
   }
 }
 
-# MySQL/Redis -> be 통신 허용 (DB 응답)
-#resource "google_compute_firewall" "allow_db_to_be" {
-#  project     = var.project_id_dev
-#  name        = "leafresh-firewall-db-to-be"
-#  network     = var.vpc_name
-#  target_tags = [var.tag_be]
-#  source_tags = [var.tag_db]
-#
-#  allow {
-#    protocol = "tcp"
-#    ports    = ["8080"]
-#  }
-#  allow {
-#    protocol = "icmp"
-#  }
-#}
-
 # be <-> GPU instance VPC 통신 허용
 # 기존 GPU VPC에 대한 정보가 없으므로, 해당 VPC의 CIDR 범위를 source_ranges로 사용
 # BE 인스턴스 → GPU1 VPC로 나가는 Egress 트래픽 허용
 resource "google_compute_firewall" "allow_be_to_gpu1" {
   name      = "leafresh-firewall-be-to-gpu1"
-  project   = var.project_id_dev
+  project   = var.project_id
   network   = var.vpc_name
   direction = "EGRESS" # ✅ 반드시 명시
   priority  = 1000
@@ -157,7 +140,7 @@ resource "google_compute_firewall" "allow_be_to_gpu1" {
 # BE 인스턴스 → GPU2 VPC로 나가는 Egress 트래픽 허용
 resource "google_compute_firewall" "allow_be_to_gpu2" {
   name      = "leafresh-firewall-be-to-gpu2"
-  project   = var.project_id_dev
+  project   = var.project_id
   network   = var.vpc_name
   direction = "EGRESS"
   priority  = 1000
@@ -176,7 +159,7 @@ resource "google_compute_firewall" "allow_be_to_gpu2" {
 }
 
 resource "google_compute_firewall" "allow_gpu1_to_be" {
-  project       = var.project_id_dev
+  project       = var.project_id
   name          = "leafresh-firewall-gpu1-to-be"
   network       = var.vpc_name
   target_tags   = [var.tag_be]
@@ -192,7 +175,7 @@ resource "google_compute_firewall" "allow_gpu1_to_be" {
 }
 
 resource "google_compute_firewall" "allow_gpu2_to_be" {
-  project       = var.project_id_dev
+  project       = var.project_id
   name          = "leafresh-firewall-gpu2-to-be"
   network       = var.vpc_name
   target_tags   = [var.tag_be]
@@ -209,7 +192,7 @@ resource "google_compute_firewall" "allow_gpu2_to_be" {
 
 # IAP를 통한 SSH 접속 허용
 resource "google_compute_firewall" "allow_iap_ssh" {
-  project     = var.project_id_dev
+  project     = var.project_id
   name        = "allow-iap-ssh"
   network     = var.vpc_name
   target_tags = [var.tag_fe, var.tag_be, var.tag_db]
@@ -223,4 +206,3 @@ resource "google_compute_firewall" "allow_iap_ssh" {
   source_ranges = ["35.235.240.0/20"]
   description   = "Allow SSH access through IAP to private instances."
 }
-

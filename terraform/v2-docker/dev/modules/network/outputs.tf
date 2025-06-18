@@ -10,8 +10,13 @@ output "subnet_be_self_link" {
   value       = google_compute_subnetwork.public_be.self_link
 }
 
+output "subnet_vault_self_link" {
+  description = "Vault Public Subnet의 Self Link"
+  value       = google_compute_subnetwork.private_vault.self_link
+}
+
 output "subnet_db_self_link" {
-  description = "MySQL/Redis Private Subnet의 Self Link"
+  description = "Redis Private Subnet의 Self Link"
   value       = google_compute_subnetwork.private_db.self_link
 }
 
@@ -30,7 +35,7 @@ output "static_ip_be" {
   value       = google_compute_address.static_ip_be.address
 }
 
-#output "static_ip_db" {
-#  description = "DB의 외부 IP 주소"
-#  value       = google_compute_address.static_ip_db.address
-#}
+output "static_ip_vault" {
+  description = "DB의 외부 IP 주소"
+  value       = google_compute_address.static_ip_vault.address
+}

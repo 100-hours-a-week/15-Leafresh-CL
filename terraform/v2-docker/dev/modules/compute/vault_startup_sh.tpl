@@ -34,17 +34,35 @@ sudo docker run --rm -p 80:80 \
   certbot/certbot certonly --standalone --non-interactive --agree-tos \
   -d ${domain}
 
-# Compose 및 Nginx 설정 준비
-sudo mkdir -p /home/ubuntu/frontend/nginx
+# Compose 및 Nginx, Vault 기본 설정 디렉토리 준비
+sudo mkdir -p /home/ubuntu/vault/nginx
+sudo mkdir -p /home/ubuntu/vault/config
+sudo mkdir -p /home/ubuntu/vault/file
+sudo mkdir -p /home/ubuntu/vault/logs
 
 # docker-compose.yml
-cat > /home/ubuntu/frontend/docker-compose.yml <<EOF
+cat > /home/ubuntu/vault/docker-compose.yml <<EOF
 ${docker_compose}
 EOF
 
 # nginx/default.conf
-cat > /home/ubuntu/frontend/nginx/default.conf <<EOF
+cat > /home/ubuntu/vault/nginx/default.conf <<EOF
 ${nginx_conf}
+EOF
+
+cat > /home/ubuntu/vault/config/vault.hcl << EOF
+listener "tcp" {
+  address = "0.0.0.0:8200"
+  tls_disable = 1
+}
+
+api_addr = "http://app:8200"
+storage "file" {
+  path = "/vault/file"
+}
+
+log_level = "info"
+ui = true
 EOF
 
 # 서비스 실행

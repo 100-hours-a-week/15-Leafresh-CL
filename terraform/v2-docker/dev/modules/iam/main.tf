@@ -49,7 +49,7 @@ locals {
 resource "google_project_iam_member" "this" {
   for_each = local.binding_map_project
 
-  project = var.project_id_dev
+  project = var.project_id
   member  = each.value.member
   role    = each.value.role
 }
@@ -61,4 +61,3 @@ resource "google_storage_bucket_iam_binding" "this" {
   role    = each.value.role
   members = each.value.members
 }
-
