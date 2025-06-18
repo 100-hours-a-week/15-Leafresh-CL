@@ -3,9 +3,9 @@
 # labels 적용
 locals {
   common_labels = {
-    app         = "leafresh"
-    environment = "dev"
-    team        = "infra"
+    app  = "leafresh"
+    env  = "dev"
+    team = "infra"
   }
 
   labels_fe = merge(local.common_labels, {

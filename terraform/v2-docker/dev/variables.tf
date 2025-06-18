@@ -34,6 +34,15 @@ variable "zone" {
   type        = string
 }
 
+#variable "service_account_gpu1" {
+#  description = "기존 gpu1 instance VPC의 서비스 계정"
+#  type        = string
+#}
+#
+#variable "service_account_gpu2" {
+#  description = "기존 gpu2 instance VPC의 서비스 계정"
+#  type        = string
+#}
 
 
 

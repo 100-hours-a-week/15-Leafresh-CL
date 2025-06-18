@@ -24,7 +24,13 @@ resource "google_sql_database_instance" "default" {
 
       private_network = var.network
     }
+    user_labels = {
+      app  = "leafresh"
+      role = "sql"
+      env  = "dev"
+    }
   }
+
 }
 
 resource "google_sql_database" "default" {

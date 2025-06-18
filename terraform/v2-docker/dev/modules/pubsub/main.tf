@@ -7,10 +7,10 @@ resource "google_pubsub_topic" "be" {
   project = var.project_id_dev
 
   labels = {
-    role        = "topic"
-    purpose     = "event-stream"
-    environment = "dev"
-    app         = "leafresh"
+    role    = "topic"
+    purpose = "event-stream"
+    env     = "dev"
+    app     = "leafresh"
   }
 }
 
@@ -24,10 +24,10 @@ resource "google_pubsub_subscription" "be" {
   ack_deadline_seconds = 20
 
   labels = {
-    role        = "subscription"
-    purpose     = "event-consumer"
-    environment = "dev"
-    app         = "leafresh"
+    role    = "subscription"
+    purpose = "event-consumer"
+    env     = "dev"
+    app     = "leafresh"
   }
 
   depends_on = [

@@ -30,17 +30,27 @@ variable "tag_db" {
 #   type        = string
 # }
 
-variable "vpc_cidr_block_gpu1" {
-  description = "기존 gpu1 instance VPC의 CIDR 블록 리스트"
-  type        = string
-}
+#variable "service_account_gpu1" {
+#  description = "기존 gpu1 instance VPC의 서비스 계정"
+#  type        = string
+#}
 
 # variable "vpc_name_gpu2" {
 #   description = "기존 gpu2 instance VPC의 이름"
 #   type        = string
 # }
 
+#variable "service_account_gpu2" {
+#  description = "기존 gpu2 instance VPC의 서비스 계정"
+#  type        = string
+#}
+
+variable "vpc_cidr_block_gpu1" {
+  description = "GPU1 VPC의 CIDR"
+  type        = string
+}
+
 variable "vpc_cidr_block_gpu2" {
-  description = "기존 gpu2 instance VPC의 CIDR 블록 리스트"
+  description = "GPU2 VPC의 CIDR"
   type        = string
 }
