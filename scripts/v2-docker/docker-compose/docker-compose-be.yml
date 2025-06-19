@@ -3,6 +3,7 @@ services:
     image: jchanho99/backend-develop:latest
     container_name: springboot-backend
     restart: always
+    network_mode: "host"
     ports:
       - "8080:8080"
     env_file:
@@ -10,10 +11,12 @@ services:
     volumes:
       - ./app/leafresh-gcs.json:/app/leafresh-gcs.json:ro
 
+
   nginx:
     image: nginx:alpine
     container_name: nginx
     restart: always
+    network_mode: "host"
     ports:
       - "80:80"
       - "443:443"
@@ -22,3 +25,4 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - app
+
