@@ -1,6 +1,6 @@
 # 15-Leafresh-CL
 # ☁️ Cloud Repository
-**Leafresh의 클라우드 운영팀 레포지토리입니다. 환영합니다!**
+**Leafresh의 클라우드 운영팀 레포지토리입니다**
 - **AWS, GCP 클라우드**를 이용해 운영하고 있으며,
 - **수동 배포 방식**과 **Github를 이용한 CI/CD**, **Terraform의 IaC 방식**을 버전별로 정리하였습니다!
 
@@ -71,9 +71,11 @@
     │   │   │   │   ├── nginx
     │   │   │   │   │   ├── default_be.conf.tpl
     │   │   │   │   │   ├── default_fe.conf.tpl
+    │   │   │   │   │   ├── default_vault.conf.tpl
     │   │   │   │   │   └── docker-compose.tpl
     │   │   │   │   ├── outputs.tf
-    │   │   │   │   └── variables.tf
+    │   │   │   │   ├── variables.tf
+    │   │   │   │   └── vault_startup.sh.tpl
     │   │   │   ├── firewall
     │   │   │   │   ├── main.tf
     │   │   │   │   └── variables.tf
@@ -119,14 +121,15 @@
     └── v3-k8s
         └── init
 
+
 ```
 
 
 ### 버전 구분 방법
 - 버전은 **디렉토리**로 구분합니다.
 - **v1**: **sftp**를 이용한 수동 배포
-- **v2**: **Docker**와 Github Action을 이용한 **CI/CD** 배포
-- **v3**: IaC 방식의 **Terraform** 배포
+- **v2**: **Docker + LoadBalancer** 기반 프론트엔드, 백엔드, AI 배포 + **Github Action**을 이용한 **CI/CD** 파이프라인 구성
+- **v3**: **Terraform** 배포 + **Helm, ArgoCD**를 이용한 **CI/CD** 파이프라인 구성
 
 <br>
 
@@ -140,13 +143,14 @@
 | **사진** | <img src="https://github.com/jchanho99.png" width="100" height="100"/> | <img src="https://github.com/pieceofizzy.png" width="100" height="100"/> |
 
 <br>
+
 ---
 
-## 🛠 사용 스택
+## 🛠 사용 스택 & CLI 버전 정보
 
-- **Google Cloud Platform (GCP)**
+- **Google Cloud SDK 526.0.1** 
 - **Amazon Web Services (AWS)**
-- **Terraform**
+- **Terraform v1.12.2**, **Provider: google v6.35.0**
 
 <br>
 
