@@ -1,4 +1,6 @@
-variable "project_id_dev" {
+# modules/iam/variables.tf
+
+variable "project_id" {
   description = "GCP Project ID"
   type        = string
 }
@@ -31,4 +33,3 @@ variable "gcs_bucket_names" {
   description = "실제 버킷 이름 맵"
   type        = map(string)
 }
-

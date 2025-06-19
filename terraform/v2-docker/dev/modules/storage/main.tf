@@ -2,7 +2,7 @@ resource "google_storage_bucket" "this" {
   for_each = var.buckets_config
 
   location                    = var.region
-  project                     = var.project_id_dev
+  project                     = var.project_id
   name                        = each.value.name
   storage_class               = each.value.storage_class
   force_destroy               = each.value.force_destroy
@@ -18,10 +18,9 @@ resource "google_storage_bucket" "this" {
     }
   }
 
-  labels = merge(
-    {
-      environment = each.value.environment_label
-      purpose     = each.value.purpose_label
+  labels = merge({}, {
+    env     = each.value.environment_label
+    purpose = each.value.purpose_label
     }
   )
 }

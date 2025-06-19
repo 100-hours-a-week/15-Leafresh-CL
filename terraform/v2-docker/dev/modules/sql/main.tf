@@ -1,5 +1,12 @@
 # modules/sql/main.tf
 
+locals {
+  merged_labels_database = merge({}, {
+    purpose = "sql-database"
+    role    = "sql"
+  })
+}
+
 resource "google_sql_database_instance" "default" {
   name             = var.db_instance_name
   project          = var.project_id
@@ -24,6 +31,8 @@ resource "google_sql_database_instance" "default" {
 
       private_network = var.network
     }
+
+    user_labels = local.merged_labels_database
   }
 }
 

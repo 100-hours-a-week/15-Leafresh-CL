@@ -1,6 +1,6 @@
 # modules/network/variables.tf
 
-variable "project_id_dev" {
+variable "project_id" {
   description = "GCP 프로젝트 ID"
   type        = string
 }
@@ -45,6 +45,11 @@ variable "subnet_name_be" {
   type        = string
 }
 
+variable "subnet_name_vault" {
+  description = "Vault 서브넷 이름"
+  type        = string
+}
+
 variable "subnet_name_db" {
   description = "DB 서브넷 이름"
   type        = string
@@ -60,8 +65,13 @@ variable "subnet_cidr_be" {
   type        = string
 }
 
+variable "subnet_cidr_vault" {
+  description = "Vault Public Subnet의 CIDR 블록"
+  type        = string
+}
+
 variable "subnet_cidr_db" {
-  description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
+  description = "Redis Private Subnet의 CIDR 블록"
   type        = string
 }
 
@@ -69,21 +79,6 @@ variable "vpc_self_link" {
   description = "Self link of the VPC (from vpc module)"
   type        = string
 }
-
-# variable "nat_ip" {
-#   description = "NAT IP 주소"
-#   type        = string
-# }
-
-# variable "nat_router" {
-#   description = "NAT 라우터 이름"
-#   type        = string
-# }
-
-# variable "nat_gateway" {
-#   description = "NAT 게이트웨이 이름"
-#   type        = string
-# }
 
 variable "static_ip_name_fe" {
   description = "FE 외부 IP 이름"
@@ -95,7 +90,7 @@ variable "static_ip_name_be" {
   type        = string
 }
 
-#variable "static_ip_name_db" {
-#  description = "DB 외부 IP 이름"
-#  type        = string
-#}
+variable "static_ip_name_vault" {
+  description = "Vault 외부 IP 이름"
+  type        = string
+}

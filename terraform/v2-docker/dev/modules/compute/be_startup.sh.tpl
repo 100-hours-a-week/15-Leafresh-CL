@@ -1,7 +1,4 @@
 #!/bin/bash
-# Time Set
-sudo timedatectl set-timezone Asia/Seoul
-sudo timedatectl set-ntp true
 
 # 이건 왜 색을 안받는데
 sudo ufw allow ${port}/tcp

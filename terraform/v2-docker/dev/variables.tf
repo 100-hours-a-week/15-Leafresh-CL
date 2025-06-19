@@ -34,7 +34,10 @@ variable "zone" {
   type        = string
 }
 
-
+variable "common_labels" {
+  description = "리소스별 공통 라벨"
+  type        = map(string)
+}
 
 
 # firewall 변수
@@ -55,6 +58,11 @@ variable "subnet_cidr_be" {
 
 variable "subnet_cidr_db" {
   description = "MySQL 및 Redis Private Subnet의 CIDR 블록"
+  type        = string
+}
+
+variable "subnet_cidr_vault" {
+  description = "Vault Public Subnet의 CIDR 블록"
   type        = string
 }
 
@@ -97,6 +105,11 @@ variable "subnet_name_db" {
   type        = string
 }
 
+variable "subnet_name_vault" {
+  description = "Vault 서브넷 이름"
+  type        = string
+}
+
 # variable "nat_ip" {
 #   description = "NAT IP 주소"
 #   type        = string
@@ -122,10 +135,10 @@ variable "static_ip_name_be" {
   type        = string
 }
 
-#variable "static_ip_name_db" {
-#  description = "DB 외부 IP 이름"
-#  type        = string
-#}
+variable "static_ip_name_vault" {
+  description = "Vault 외부 IP 주소"
+  type        = string
+}
 
 
 
@@ -160,6 +173,11 @@ variable "tag_db" {
   type        = string
 }
 
+variable "tag_vault" {
+  description = "vault 인스턴스에 적용할 네트워크 태그"
+  type        = string
+}
+
 variable "gce_name_fe" {
   description = "fe 인스턴스 이름"
   type        = string
@@ -175,6 +193,11 @@ variable "gce_name_db" {
   type        = string
 }
 
+variable "gce_name_vault" {
+  description = "vault 인스턴스 이름"
+  type        = string
+}
+
 variable "gce_machine_type_fe" {
   description = "GCE FE용 VM 타입"
   type        = string
@@ -187,6 +210,11 @@ variable "gce_machine_type_be" {
 
 variable "gce_machine_type_db" {
   description = "GCE BE용 VM 타입"
+  type        = string
+}
+
+variable "gce_machine_type_vault" {
+  description = "GCE vault용 VM 타입"
   type        = string
 }
 
@@ -210,64 +238,69 @@ variable "gce_disk_size" {
   type        = string
 }
 
-variable "startup_fe_nextjs_port" {
+variable "gce_startup_fe_port" {
   description = "FE 인스턴스 포트 번호"
   type        = string
 }
 
-variable "startup_fe_container_name" {
+variable "gce_startup_fe_container_name" {
   description = "FE 인스턴스 도커 컨테이너 이름 설정"
   type        = string
 }
 
-variable "startup_fe_image" {
+variable "gce_startup_fe_image" {
   description = "FE 인스턴스 도커 사용 이미지 이름"
   type        = string
 }
 
-variable "startup_be_springboot_port" {
+variable "gce_startup_be_port" {
   description = "BE 인스턴스 env 이름"
   type        = string
 }
 
-variable "startup_be_secret_name" {
+variable "gce_startup_be_secret_name" {
   description = "BE 인스턴스 env 이름"
   type        = string
   sensitive   = true
 }
 
-variable "startup_be_secret_name_json" {
+variable "gce_startup_be_secret_name_json" {
   description = "BE 인스턴스 json 이름"
   type        = string
   sensitive   = true
 }
 
-variable "startup_be_container_name" {
+variable "gce_startup_be_container_name" {
   description = "BE 인스턴스 도커 컨테이너 이름 설정"
   type        = string
 }
 
-variable "startup_be_image" {
+variable "gce_startup_be_image" {
   description = "BE 인스턴스 도커 사용 이미지 이름"
   type        = string
 }
 
-#variable "startup_db_mysql_root_password" {
-#  description = "DB 인스턴스 루트 계정 비밀번호"
-#  type        = string
-#}
+variable "gce_startup_vault_port" {
+  description = "BE 인스턴스 포트 번호"
+  type        = string
+}
 
-#variable "startup_db_mysql_database_name" {
-#  description = "DB 인스턴스 데이터베이스 이름"
-#  type        = string
-#}
+variable "gce_startup_vault_container_name" {
+  description = "BE 인스턴스 도커 컨테이너 이름 설정"
+  type        = string
+}
 
-variable "startup_db_redis_port" {
+variable "gce_startup_vault_image" {
+  description = "BE 인스턴스 도커 사용 이미지 이름"
+  type        = string
+}
+
+variable "gce_startup_db_redis_port" {
   description = "DB 인스턴스 redis 포트 번호"
   type        = string
 }
 
-variable "startup_db_redis_host" {
+variable "gce_startup_db_redis_host" {
   description = "DB 인스턴스 redis 호스트 이름"
   type        = string
 }

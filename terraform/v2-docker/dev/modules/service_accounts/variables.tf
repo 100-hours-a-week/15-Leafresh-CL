@@ -1,3 +1,5 @@
+# modules/service_accounts/variables.tf
+
 variable "project_id" {
   description = "GCP 프로젝트 ID"
   type        = string
