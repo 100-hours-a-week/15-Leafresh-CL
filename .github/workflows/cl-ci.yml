@@ -1,0 +1,229 @@
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  PR:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform/v2-docker/dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.2
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY_DEV }}
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY_DEV }}
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY_DEV }}
+
+      - name: Render terraform docs and push changes back to PR
+        uses: terraform-docs/gh-actions@main
+        with:
+          working-dir: ./terraform/v2-docker/dev
+          output-file: README.md
+          output-method: inject
+          git-push: "true"
+          recursive: "true"
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        continue-on-error: true
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY_DEV }}
+
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY_DEV }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            <details><summary>Validation Output</summary>
+
+            \`\`\`\n
+            ${{ steps.validate.outputs.stdout }}
+            \`\`\`
+
+            </details>
+
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`tf\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+  infracost:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      TF_ROOT: ./terraform/v2-docker/dev
+      # This instructs the CLI to send cost estimates to Infracost Cloud. Our SaaS product
+      #   complements the open source CLI by giving teams advanced visibility and controls.
+      #   The cost estimates are transmitted in JSON format and do not contain any cloud
+      #   credentials or secrets (see https://infracost.io/docs/faq/ for more information).
+      INFRACOST_ENABLE_CLOUD: true
+
+    steps:
+      # If you use private modules, add an environment variable or secret
+      # called GIT_SSH_KEY with your private key, so Infracost can access
+      # private repositories (similar to how Terraform/Terragrunt does).
+      # - name: add GIT_SSH_KEY
+      #   run: |
+      #     ssh-agent -a $SSH_AUTH_SOCK
+      #     mkdir -p ~/.ssh
+      #     echo "${{ secrets.GIT_SSH_KEY }}" | tr -d '\r' | ssh-add -
+      #     ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        # See https://github.com/infracost/actions/tree/master/setup for other inputs
+        # If you can't use this action, see Docker images in https://infracost.io/cicd
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # Checkout the base branch of the pull request (e.g. main/master).
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: "${{ github.event.pull_request.base.ref }}"
+
+      # Generate Infracost JSON file as the baseline.
+      - name: Generate Infracost cost estimate baseline
+        run: |
+          infracost breakdown --path=${TF_ROOT} \
+                              --format=json \
+                              --out-file=/tmp/infracost-base.json
+
+      # Checkout the current PR branch so we can create a diff.
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      # Generate an Infracost diff and save it to a JSON file.
+      - name: Generate Infracost diff
+        run: |
+          infracost diff --path=${TF_ROOT} \
+                          --format=json \
+                          --compare-to=/tmp/infracost-base.json \
+                          --out-file=/tmp/infracost.json
+
+      # Posts a comment to the PR using the 'update' behavior.
+      # This creates a single comment and updates it. The "quietest" option.
+      # The other valid behaviors are:
+      #   delete-and-new - Delete previous comments and create a new one.
+      #   hide-and-new - Minimize previous comments and create a new one.
+      #   new - Create a new cost estimate comment on every push.
+      # See https://www.infracost.io/docs/features/cli_commands/#comment-on-pull-requests for other options.
+      - name: Post Infracost comment
+        run: |
+          infracost comment github --path=/tmp/infracost.json \
+                                    --repo=$GITHUB_REPOSITORY \
+                                    --github-token=${{github.token}} \
+                                    --pull-request=${{github.event.pull_request.number}} \
+                                    --behavior=hide-and-new
+
+  pluralith:
+    runs-on: ubuntu-latest
+    env:
+      working-directory: ./terraform/v2-docker/dev
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      # Set up Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false # This is recommended so the `terraform show` command outputs valid JSON
+        env:
+          GOOGLE_CREDENTIALS: ${{ secets.GCP_SA_KEY_DEV }}
+
+      # Init Terraform project
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ env.working-directory }}
+        env:
+          GOOGLE_CREDENTIALS: ${{ secets.GCP_SA_KEY_DEV }}
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        # See https://github.com/infracost/actions/tree/master/setup for other inputs
+        # If you can't use this action, see Docker images in https://infracost.io/cicd
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # Set up and authenticate Pluralith
+      - name: Pluralith Init
+        uses: Pluralith/actions/init@v1.4.0
+        with:
+          terraform-path: ${{ env.working-directory }}
+          api-key: ${{ secrets.PLURALITH_API_KEY }}
+          project-id: ${{ secrets.PLURALITH_PROJECT_ID }}
+        env:
+          GOOGLE_CREDENTIALS: ${{ secets.GCP_SA_KEY_DEV }}
+
+      # Run Pluralith to generate an infrastructure diagram and comment body
+      - name: Pluralith Run
+        uses: Pluralith/actions/run@v1.4.0
+        with:
+          title: \#${{ github.event.number }}
+          terraform-path: ${{ env.working-directory }}
+          show-changes: true
+          show-drift: true
+          show-costs: true # Requires Infracost to be set up in your pipeline
+        env:
+          GOOGLE_CREDENTIALS: ${{ secets.GCP_SA_KEY_DEV }}
+
+      # Post the generated diagram as a GitHub comment
+      - name: Pluralith Comment
+        uses: Pluralith/actions/comment@v1.4.0
+        with:
+          terraform-path: ${{ env.working-directory }}
+          behavior: hide-and-new
+        env:
+          GOOGLE_CREDENTIALS: ${{ secets.GCP_SA_KEY_DEV }}
