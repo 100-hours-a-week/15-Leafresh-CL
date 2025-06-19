@@ -283,19 +283,16 @@ variable "gce_startup_be_image" {
 variable "gce_startup_vault_port" {
   description = "BE 인스턴스 포트 번호"
   type        = string
-  default     = "8200"
 }
 
 variable "gce_startup_vault_container_name" {
   description = "BE 인스턴스 도커 컨테이너 이름 설정"
   type        = string
-  default     = "vault"
 }
 
 variable "gce_startup_vault_image" {
   description = "BE 인스턴스 도커 사용 이미지 이름"
   type        = string
-  default     = "hashicorp/vault:latest"
 }
 
 variable "gce_startup_db_redis_port" {

@@ -12,7 +12,7 @@ output "subnet_be_self_link" {
 
 output "subnet_vault_self_link" {
   description = "Vault Public Subnet의 Self Link"
-  value       = google_compute_subnetwork.private_vault.self_link
+  value       = google_compute_subnetwork.public_vault.self_link
 }
 
 output "subnet_db_self_link" {

@@ -18,9 +18,9 @@ output "vault_external_ip" {
   value       = module.compute.vault_external_ip
 }
 
-output "springboot_internal_ip" {
+output "be_internal_ip" {
   description = "Spring Boot 인스턴스의 내부 IP 주소"
-  value       = module.compute.springboot_internal_ip
+  value       = module.compute.be_internal_ip
 }
 
 output "db_internal_ip" {
