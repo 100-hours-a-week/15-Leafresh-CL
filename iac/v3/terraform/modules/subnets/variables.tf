@@ -29,11 +29,6 @@ variable "name_prefix" {
   type        = string
 }
 
-variable "tier_tag" {
-  description = "Value for the 'Tier' tag (e.g., 'Public', 'Private-EKS')."
-  type        = string
-}
-
 variable "map_public_ip_on_launch" {
   description = "Whether to map public IP on launch (true for public subnets)."
   type        = bool
