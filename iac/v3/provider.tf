@@ -1,6 +1,6 @@
 # provider.tf
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.12.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -18,7 +18,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-northeast-2"
+  region = var.region
   default_tags {
     tags = {
       Environment = var.tag_environment
