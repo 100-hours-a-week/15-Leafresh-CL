@@ -73,44 +73,44 @@ variable "s3_bucket_suffixes" {
 
 # RDS variables
 # =====================================================================
-variable "db_username" {
+variable "rds_username" {
   description = "Master username for the RDS instance"
   type        = string
   default     = "root"
 }
 
-variable "db_password" {
+variable "rds_password" {
   description = "Master password for the RDS instance"
   type        = string
   default     = "Rlatldms!2!3"
   sensitive   = true
 }
 
-variable "db_instance" {
+variable "rds_instance_class" {
   description = "Instance class for the RDS instance"
   type        = string
   default     = "db.m5.xlarge"
 }
 
-variable "db_engine" {
+variable "rds_engine" {
   description = "Instance engine for the RDS instance"
   type        = string
   default     = "mysql"
 }
 
-variable "db_engine_version" {
+variable "rds_engine_version" {
   description = "Instance engine version for the RDS instance"
   type        = string
   default     = "8.0"
 }
 
-variable "db_storage_type" {
+variable "rds_storage_type" {
   description = "Storage type for the RDS instance"
   type        = string
   default     = "gp3"
 }
 
-variable "db_multi_az" {
+variable "rds_multi_az" {
   description = "Multi AZ setting for the RDS instance"
   type        = bool
   default     = false
@@ -136,4 +136,75 @@ variable "sqs_fifo_max_receive_count" {
   description = "MaxReceiveCount for DLQ redrive policy"
   type        = number
   default     = 5
+}
+
+
+
+# EC2 variables & locals
+# =====================================================================
+locals {
+  ec2_nodes = [
+    {
+      name          = "grafana-prometheus"
+      ami           = "ami-0662f4965dfc70aca" # Grafana+Prometheus 전용 AMI
+      instance_type = "t3.small"
+      subnet_id      = module.subnets.private_subnet_ids_map["a-1"]
+      role          = "k8s"
+    },
+    {
+      name          = "k8s-master"
+      ami           = "ami-0662f4965dfc70aca" # Kubernetes Master AMI
+      instance_type = "t3.medium"
+      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
+      role          = "k8s"
+    },
+    {
+      name          = "k8s-worker"
+      ami           = "ami-0662f4965dfc70aca" # Kubernetes Worker AMI
+      instance_type = "t3.medium"
+      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
+      role          = "k8s"
+    },
+    {
+      name          = "argocd"
+      ami           = "ami-0662f4965dfc70aca"
+      instance_type = "t3.small"
+      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
+      role          = "k8s"
+    },
+    {
+      name          = "ai-cpu"
+      ami           = "ami-0662f4965dfc70aca" # GPU 지원 AMI
+      instance_type = "g4dn.xlarge"
+      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
+      role          = "gpu"
+    },
+    {
+      name          = "ai-gpu"
+      ami           = "ami-060449aa9aa36d665" # GPU 지원 AMI
+      instance_type = "g4dn.xlarge"
+      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
+      role          = "gpu"
+    }
+  ]
+
+  asg_k8s = {
+    subnet_ids = [
+      module.subnets.private_subnet_ids_map["a-1"],
+      module.subnets.private_subnet_ids_map["c-1"],
+    ]
+    min_size         = 1
+    max_size         = 2
+    desired_capacity = 1
+  }
+}
+
+
+
+# ECR variables
+# =====================================================================
+variable "ecr_repository_names" {
+  description = "Lists of ECR repository to create."
+  type        = list(string)
+  default     = ["ecr"]
 }

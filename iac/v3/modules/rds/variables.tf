@@ -10,5 +10,4 @@ variable "storage_type" { type = string }
 variable "instance_class" { type = string }
 variable "engine" { type = string }
 variable "engine_version" { type = string }
-variable "identifier" { type = string }
 variable "multi_az" { type = bool }

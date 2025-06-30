@@ -8,7 +8,7 @@ resource "aws_db_subnet_group" "this" {
 }
 
 resource "aws_db_instance" "this" {
-  identifier           = var.identifier
+  identifier           = "${var.project_name}-rds"
   allocated_storage    = 20
   engine               = var.engine
   engine_version       = var.engine_version
@@ -21,7 +21,7 @@ resource "aws_db_instance" "this" {
   multi_az             = var.multi_az
   storage_type         = var.storage_type
   tags = {
-    Name = var.identifier
+    Name = "${var.project_name}-rds"
   }
 }
 

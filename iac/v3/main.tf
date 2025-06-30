@@ -22,27 +22,59 @@ module "s3" {
   bucket_suffix = var.s3_bucket_suffixes
 }
 
-module "rds" {
-  source         = "./modules/rds"
-  project_name   = var.project_name
-  db_username    = var.db_username
-  db_password    = var.db_password
-  instance_class = var.db_instance
-  engine         = var.db_engine
-  engine_version = var.db_engine_version
-  storage_type   = var.db_storage_type
-  multi_az       = var.db_multi_az
-  identifier     = "${var.project_name}-rds"
-  subnet_ids = [
-    module.subnets.private_subnet_ids["a-1"],
-    module.subnets.private_subnet_ids["c-1"]
-  ]
-}
-
 module "sqs" {
   source            = "./modules/sqs"
   project_name      = var.project_name
   queue_names       = var.sqs_fifo_queue_names
   dlq_queue_names   = var.sqs_fifo_dlq_queue_names
   max_receive_count = var.sqs_fifo_max_receive_count
+}
+
+module "rds" {
+  source         = "./modules/rds"
+  project_name   = var.project_name
+  instance_class = var.rds_instance_class
+  engine         = var.rds_engine
+  engine_version = var.rds_engine_version
+  multi_az       = var.rds_multi_az
+  db_username    = var.rds_username
+  db_password    = var.rds_password
+  storage_type   = var.rds_storage_type
+  subnet_ids = [
+    module.subnets.private_subnet_ids_map["a-2"],
+    module.subnets.private_subnet_ids_map["c-2"]
+  ]
+}
+
+module "ec2" {
+  source       = "./modules/ec2"
+  project_name = var.project_name
+  vpc_id       = module.vpc.vpc_id # VPC 모듈 outputs 중 ID
+  region       = var.region
+  ec2_nodes    = local.ec2_nodes
+}
+
+module "alb" {
+  source             = "./modules/alb"
+  project_name       = var.project_name
+  vpc_id             = module.vpc.vpc_id
+  public_subnet_ids  = module.subnets.public_subnet_ids
+  security_group_ids = [module.ec2.sg_k8s_id]
+}
+
+module "asg" {
+  source             = "./modules/asg"
+  project_name       = var.project_name
+  launch_template_id = module.ec2.launch_templates["k8s-worker"]
+  target_group_arn   = module.alb.target_group_arn
+  subnet_ids         = local.asg_k8s.subnet_ids
+  min_size           = local.asg_k8s.min_size
+  max_size           = local.asg_k8s.max_size
+  desired_capacity   = local.asg_k8s.desired_capacity
+}
+
+module "ecr" {
+  source           = "./modules/ecr"
+  project_name     = var.project_name
+  repository_names = var.ecr_repository_names
 }
