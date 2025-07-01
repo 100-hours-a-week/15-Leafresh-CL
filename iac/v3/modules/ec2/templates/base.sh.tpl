@@ -18,48 +18,96 @@ sysctl net.bridge.bridge-nf-call-iptables=1
 case "${node_name}" in
 
   "k8s-master")
-    # Master 초기화 및 Flannel 설치
+    # 1) 클러스터 초기화
     kubeadm init --pod-network-cidr=10.244.0.0/16
+
+    # 2) kubeconfig & Flannel
     mkdir -p /home/ubuntu/.kube
-    cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+    cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
     chown ubuntu:ubuntu /home/ubuntu/.kube/config
     su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
 
-    # join 스크립트 생성 후 S3 업로드
+    # 3) join 스크립트 + admin.conf → S3 업로드
     su - ubuntu -c "kubeadm token create --print-join-command > /home/ubuntu/join.sh"
-    aws s3 cp /home/ubuntu/join.sh s3://${project_name}-scripts/join.sh
+    aws s3 cp /home/ubuntu/join.sh     s3://${project_name}-scripts/join.sh
+    aws s3 cp /etc/kubernetes/admin.conf s3://${project_name}-scripts/admin.conf
     ;;
 
-  "k8s-worker")
-    # Master join
+  "k8s-worker-fe"|"k8s-worker-be")
+    # 1) join 대기 & 실행
     until aws s3 cp s3://${project_name}-scripts/join.sh /home/ubuntu/join.sh; do sleep 5; done
     bash /home/ubuntu/join.sh
-    ;;
 
-  "grafana-prometheus")
-    # kubeconfig 준비
-    until test -f /home/ubuntu/.kube/config; do sleep 10; done
+    # 2) kubeconfig 다운로드 & 권한 설정
+    mkdir -p /home/ubuntu/.kube
+    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 
-    # Helm 설치
-    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-    # 공식 Helm 차트 리포지토리 등록
-    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    helm repo add grafana              https://grafana.github.io/helm-charts
-    helm repo update
+    # 3) ECR 로그인 (컨테이너 + Helm)
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    aws ecr get-login-password --region ${region} \
+      | docker login --username AWS --password-stdin $${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com
+    aws ecr get-login-password --region ${region} \
+      | helm registry login --username AWS --password-stdin $${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com
 
-    # 차트 설치 (public repo)
-    helm install prometheus prometheus-community/prometheus
-    helm install grafana    grafana/grafana --set adminPassword="admin"
+    # 4) Helm 차트 설치
+    if [ "${node_name}" = "k8s-worker-fe" ]; then
+      helm install frontend \
+        oci://$${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com/${project_name}-charts/frontend \
+        --version 1.0.0 \
+        --create-namespace --namespace frontend
+    else
+      helm install backend \
+        oci://$${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com/${project_name}-charts/backend \
+        --version 1.0.0 \
+        --create-namespace --namespace backend
+    fi
     ;;
 
+  "monitoring")
+    # 1) kubeconfig 다운로드
+    mkdir -p /home/ubuntu/.kube
+    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    chown -R ubuntu:ubuntu /home/ubuntu/.kube
+    export KUBECONFIG=/home/ubuntu/.kube/config
+
+    # 2) Helm 설치
+    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+    # 3) Prometheus/Grafana 모니터링 스택
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo update
+    helm install monitoring \
+      prometheus-community/kube-prometheus-stack \
+      --create-namespace --namespace monitoring
+
+    # 4) Loki (로그 수집) 서버 및 Agent
+    helm install loki \
+      grafana/loki-stack \
+      --namespace monitoring \
+      --set promtail.enabled=true \
+      --set promtail.serviceMonitor.enabled=true
+
+    # 5) Jaeger (트레이스 수집) all-in-one 배포
+    helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+    helm repo update
+    helm install jaeger \
+      jaegertracing/jaeger \
+      --namespace monitoring \
+      --set provisionDataStore.cassandra=false \
+      --set provisionDataStore.elasticsearch=false \
+      --set collector.agent.enabled=true
+    ;;
 
   "argocd")
-    # kubeconfig 준비
-    until test -f /home/ubuntu/.kube/config; do sleep 10; done
+    # 1) kubeconfig 다운로드
+    mkdir -p /home/ubuntu/.kube
+    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 
-    # Argo CD 설치
+    # 2) Argo CD 설치
     kubectl create namespace argocd || true
     kubectl apply -n argocd \
       -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml

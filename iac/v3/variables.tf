@@ -145,22 +145,29 @@ variable "sqs_fifo_max_receive_count" {
 locals {
   ec2_nodes = [
     {
-      name          = "grafana-prometheus"
-      ami           = "ami-0662f4965dfc70aca" # Grafana+Prometheus 전용 AMI
+      name          = "monitoring"
+      ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.small"
-      subnet_id      = module.subnets.private_subnet_ids_map["a-1"]
+      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
       name          = "k8s-master"
-      ami           = "ami-0662f4965dfc70aca" # Kubernetes Master AMI
+      ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
-      name          = "k8s-worker"
-      ami           = "ami-0662f4965dfc70aca" # Kubernetes Worker AMI
+      name          = "k8s-worker-fe"
+      ami           = "ami-0662f4965dfc70aca"
+      instance_type = "t3.medium"
+      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
+      role          = "k8s"
+    },
+    {
+      name          = "k8s-worker-be"
+      ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
@@ -174,18 +181,25 @@ locals {
     },
     {
       name          = "ai-cpu"
-      ami           = "ami-0662f4965dfc70aca" # GPU 지원 AMI
+      ami           = "ami-0662f4965dfc70aca"
       instance_type = "g4dn.xlarge"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "gpu"
     },
     {
       name          = "ai-gpu"
-      ami           = "ami-060449aa9aa36d665" # GPU 지원 AMI
+      ami           = "ami-060449aa9aa36d665"
       instance_type = "g4dn.xlarge"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "gpu"
-    }
+    },
+    {
+      name          = "redis"
+      ami           = "ami-0662f4965dfc70aca"
+      instance_type = "t3.small"
+      subnet_id     = module.subnets.private_subnet_ids_map["a-2"]
+      role          = "k8s"
+    },
   ]
 
   asg_k8s = {

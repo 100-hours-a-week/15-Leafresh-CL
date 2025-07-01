@@ -60,13 +60,16 @@ module "alb" {
   vpc_id             = module.vpc.vpc_id
   public_subnet_ids  = module.subnets.public_subnet_ids
   security_group_ids = [module.ec2.sg_k8s_id]
+  instance_id_k8s_worker_fe = module.ec2.instance_ids[2]
+  instance_id_monitoring = module.ec2.instance_ids[0]
+  instance_id_argocd = module.ec2.instance_ids[5]
 }
 
 module "asg" {
   source             = "./modules/asg"
   project_name       = var.project_name
   launch_template_id = module.ec2.launch_templates["k8s-worker"]
-  target_group_arn   = module.alb.target_group_arn
+  target_group_arn   = module.alb.target_group_arn_fe
   subnet_ids         = local.asg_k8s.subnet_ids
   min_size           = local.asg_k8s.min_size
   max_size           = local.asg_k8s.max_size

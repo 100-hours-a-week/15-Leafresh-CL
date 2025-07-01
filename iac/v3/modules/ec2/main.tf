@@ -54,6 +54,14 @@ resource "aws_security_group" "k8s" {
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"]
   }
+  # NodePort 서비스 (필요 시 외부에 공개할 수 있도록 열어둠)
+  ingress {
+    description = "K8s NodePort range"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   # Grafana UI
   ingress {
     description = "Grafana UI"
@@ -78,13 +86,13 @@ resource "aws_security_group" "k8s" {
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"]
   }
-  # NodePort 서비스 (필요 시 외부에 공개할 수 있도록 열어둠)
+  # Redis
   ingress {
-    description = "K8s NodePort range"
-    from_port   = 30000
-    to_port     = 32767
+    description = "ArgoCD UI"
+    from_port   = 6379
+    to_port     = 6379
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
@@ -104,7 +112,7 @@ resource "aws_security_group" "gpu" {
   name        = "${var.project_name}-sg-gpu"
   description = "Instance using GPU"
   vpc_id      = var.vpc_id
-
+  # SSH
   ingress {
     description = "SSH"
     from_port   = 22
@@ -112,13 +120,37 @@ resource "aws_security_group" "gpu" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  # Fast API
   ingress {
-    description = "SSH"
+    description = "fastapi"
     from_port   = 8000
     to_port     = 8000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+  # Grafana UI
+  ingress {
+    description = "Grafana UI"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+  # Prometheus
+  ingress {
+    description = "Prometheus"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+  # ArgoCD UI
+  ingress {
+    description = "ArgoCD UI"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
@@ -137,8 +169,8 @@ resource "aws_security_group" "gpu" {
 # Key Pairs
 # ────────────────────────────────────────────────────────────────────────────────
 resource "aws_key_pair" "this" {
-  key_name   = "${var.project_name}-keypair"                   # 원하는 이름
-  public_key = file("~/.ssh/id_ed25519.pub")             # 본인 로컬 공개키 경로
+  key_name   = "${var.project_name}-keypair" # 원하는 이름
+  public_key = file("~/.ssh/id_ed25519.pub") # 본인 로컬 공개키 경로
 }
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -170,7 +202,7 @@ resource "aws_launch_template" "template" {
   image_id      = each.value.ami
   instance_type = each.value.instance_type
 
-  key_name =  aws_key_pair.this.key_name      # lookup(each.value, "key_name", null)
+  key_name = aws_key_pair.this.key_name # lookup(each.value, "key_name", null)
   user_data = base64encode(
     templatefile(
       "${path.module}/templates/base.sh.tpl",

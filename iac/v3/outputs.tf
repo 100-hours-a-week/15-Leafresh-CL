@@ -108,9 +108,9 @@ output "alb_dns_name" {
   value       = module.alb.alb_dns_name
 }
 
-output "alb_target_group_arn" {
+output "alb_target_group_arn_fe" {
   description = "ALB Target Group ARN"
-  value       = module.alb.target_group_arn
+  value       = module.alb.target_group_arn_fe
 }
 
 ///////////////////////////////////////////////////////////////////////////////
