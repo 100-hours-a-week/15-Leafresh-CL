@@ -134,6 +134,14 @@ resource "aws_security_group" "gpu" {
 }
 
 # ────────────────────────────────────────────────────────────────────────────────
+# Key Pairs
+# ────────────────────────────────────────────────────────────────────────────────
+resource "aws_key_pair" "this" {
+  key_name   = "${var.project_name}-keypair"                   # 원하는 이름
+  public_key = file("~/.ssh/id_ed25519.pub")             # 본인 로컬 공개키 경로
+}
+
+# ────────────────────────────────────────────────────────────────────────────────
 # EC2 Instances
 # ────────────────────────────────────────────────────────────────────────────────
 resource "aws_instance" "nodes" {
@@ -162,14 +170,16 @@ resource "aws_launch_template" "template" {
   image_id      = each.value.ami
   instance_type = each.value.instance_type
 
-  key_name = lookup(each.value, "key_name", null)
-  user_data = filebase64(
-    "${path.module}/templates/base.sh.tpl",
-    {
-      node_name    = each.key
-      project_name = var.project_name
-      region       = var.region
-    }
+  key_name =  aws_key_pair.this.key_name      # lookup(each.value, "key_name", null)
+  user_data = base64encode(
+    templatefile(
+      "${path.module}/templates/base.sh.tpl",
+      {
+        node_name    = each.key
+        project_name = var.project_name
+        region       = var.region
+      }
+    )
   )
 
   network_interfaces {
