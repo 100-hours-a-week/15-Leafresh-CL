@@ -100,17 +100,30 @@ output "ec2_private_ips" {
 ///////////////////////////////////////////////////////////////////////////////
 output "alb_arn" {
   description = "Application Load Balancer ARN"
-  value       = module.alb.alb_arn
+  value       = module.alb.arn
 }
 
 output "alb_dns_name" {
   description = "Application Load Balancer DNS name"
-  value       = module.alb.alb_dns_name
+  value       = module.alb.dns_name
 }
 
 output "alb_target_group_arn_fe" {
   description = "ALB Target Group ARN"
   value       = module.alb.target_group_arn_fe
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// NLB 모듈
+///////////////////////////////////////////////////////////////////////////////
+output "nlb_arn" {
+  description = "Application Load Balancer ARN"
+  value       = module.nlb.arn
+}
+
+output "nlb_dns_name" {
+  description = "Application Load Balancer DNS name"
+  value       = module.nlb.dns_name
 }
 
 ///////////////////////////////////////////////////////////////////////////////

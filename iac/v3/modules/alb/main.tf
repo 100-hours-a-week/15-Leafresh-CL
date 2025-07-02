@@ -23,11 +23,28 @@ resource "aws_lb_target_group" "fe" {
     matcher             = "200-399"
   }
 
-  tags = { Name = "${var.project_name}-tg" }
+  tags = { Name = "${var.project_name}-alb-tg-fe" }
+}
+
+resource "aws_lb_target_group" "be" {
+  name     = "${var.project_name}-alb-tg-be"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/api"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    interval            = 30
+    matcher             = "200-399"
+  }
+
+  tags = { Name = "${var.project_name}-alb-tg-be" }
 }
 
 resource "aws_lb_target_group" "monitoring" {
-  name     = "${var.project_name}-tg-monitoring"
+  name     = "${var.project_name}-alb-tg-monitoring"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -40,10 +57,11 @@ resource "aws_lb_target_group" "monitoring" {
     interval            = 30
     matcher             = "200-399"
   }
+  tags = { Name = "${var.project_name}-alb-tg-monitoring" }
 }
 
 resource "aws_lb_target_group" "argocd" {
-  name     = "${var.project_name}-tg-argo"
+  name     = "${var.project_name}-alb-tg-argo"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -56,6 +74,7 @@ resource "aws_lb_target_group" "argocd" {
     interval            = 30
     matcher             = "200-399"
   }
+  tags = { Name = "${var.project_name}-alb-tg-argocd" }
 }
 
 resource "aws_lb_listener" "http" {
@@ -69,9 +88,23 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-resource "aws_lb_listener_rule" "monitoring_rule" {
+resource "aws_lb_listener_rule" "be_rule" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 200
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.be.arn
+  }
+  condition {
+    path_pattern {
+      values = ["/api*", "/s3*", "/oauth*"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "monitoring_rule" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 250
   action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.monitoring.arn
@@ -100,6 +133,11 @@ resource "aws_lb_listener_rule" "argocd_rule" {
 resource "aws_lb_target_group_attachment" "fe_attach" {
   target_group_arn = aws_lb_target_group.fe.arn
   target_id        = var.instance_id_k8s_worker_fe
+  port             = 80
+}
+resource "aws_lb_target_group_attachment" "be_attach" {
+  target_group_arn = aws_lb_target_group.be.arn
+  target_id        = var.instance_id_k8s_worker_be
   port             = 80
 }
 resource "aws_lb_target_group_attachment" "mon_attach" {

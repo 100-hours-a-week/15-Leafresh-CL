@@ -182,7 +182,7 @@ locals {
     {
       name          = "ai-cpu"
       ami           = "ami-0662f4965dfc70aca"
-      instance_type = "g4dn.xlarge"
+      instance_type = "t3.xlarge"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "gpu"
     },
@@ -221,4 +221,32 @@ variable "ecr_repository_names" {
   description = "Lists of ECR repository to create."
   type        = list(string)
   default     = ["ecr"]
+}
+
+
+
+# DNS variables
+# =====================================================================
+variable "domain_name" {
+  description = "Name of domain url"
+  type        = string
+  default     = "dev-leafresh.app"
+}
+
+variable "dns_ttl" {
+  description = "ttl of DNS"
+  type        = string
+  default     = 300
+}
+
+variable "gcp_managed_zone" {
+  description = "Managed Zone of GCP DNS"
+  type        = string
+  default     = "dev-leafresh.app"
+}
+
+variable "gcp_project_name" {
+  description = "Project Name of GCP that includes Cloud DNS"
+  type        = string
+  default     = "leafresh"
 }

@@ -55,26 +55,48 @@ module "ec2" {
 }
 
 module "alb" {
-  source             = "./modules/alb"
-  project_name       = var.project_name
-  vpc_id             = module.vpc.vpc_id
-  public_subnet_ids  = module.subnets.public_subnet_ids
-  security_group_ids = [module.ec2.sg_k8s_id]
+  source                    = "./modules/alb"
+  project_name              = var.project_name
+  vpc_id                    = module.vpc.vpc_id
+  public_subnet_ids         = module.subnets.public_subnet_ids
+  security_group_ids        = [module.ec2.sg_k8s_id]
   instance_id_k8s_worker_fe = module.ec2.instance_ids[2]
-  instance_id_monitoring = module.ec2.instance_ids[0]
-  instance_id_argocd = module.ec2.instance_ids[5]
+  instance_id_k8s_worker_be = module.ec2.instance_ids[3]
+  instance_id_monitoring    = module.ec2.instance_ids[0]
+  instance_id_argocd        = module.ec2.instance_ids[5]
 }
+
+module "nlb" {
+  source       = "./modules/nlb"
+  project_name = var.project_name
+  vpc_id       = module.vpc.vpc_id
+  subnet_ids   = module.subnets.public_subnet_ids
+  instance_ids = [module.ec2.instance_ids[3]]
+}
+
 
 module "asg" {
   source             = "./modules/asg"
   project_name       = var.project_name
-  launch_template_id = module.ec2.launch_templates["k8s-worker"]
+  launch_template_id = module.ec2.launch_templates["k8s-worker-fe"]
   target_group_arn   = module.alb.target_group_arn_fe
   subnet_ids         = local.asg_k8s.subnet_ids
   min_size           = local.asg_k8s.min_size
   max_size           = local.asg_k8s.max_size
   desired_capacity   = local.asg_k8s.desired_capacity
 }
+
+module "dns" {
+  source                  = "./modules/dns"
+  domain_name             = var.domain_name
+  gcp_managed_zone        = var.gcp_managed_zone
+  alb_arn                  = module.alb.arn
+  alb_dns_name             = module.alb.dns_name
+  default_target_group_arn = module.alb.target_group_arn_fe
+  ttl = var.dns_ttl
+  ssl_policy              = "ELBSecurityPolicy-2016-08"
+}
+
 
 module "ecr" {
   source           = "./modules/ecr"
