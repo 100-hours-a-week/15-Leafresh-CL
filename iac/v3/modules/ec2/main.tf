@@ -178,7 +178,6 @@ resource "aws_key_pair" "this" {
 # ────────────────────────────────────────────────────────────────────────────────
 resource "aws_instance" "nodes" {
   for_each = { for node in var.ec2_nodes : node.name => node }
-
   ami                         = each.value.ami
   instance_type               = each.value.instance_type
   subnet_id                   = each.value.subnet_id
@@ -197,7 +196,6 @@ resource "aws_instance" "nodes" {
 
 resource "aws_launch_template" "template" {
   for_each = { for node in var.ec2_nodes : node.name => node }
-
   name_prefix   = "${var.project_name}-${each.key}-lt"
   image_id      = each.value.ami
   instance_type = each.value.instance_type

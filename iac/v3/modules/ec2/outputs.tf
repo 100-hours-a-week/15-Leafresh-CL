@@ -1,7 +1,7 @@
 # modules/ec2/outputs.tf
 output "instance_ids" {
   description = "생성된 EC2 인스턴스 ID 리스트"
-  value       = [for _, inst in aws_instance.nodes : inst.id]
+  value       = { for name, inst in aws_instance.nodes : name => inst.id }
 }
 
 output "public_ips" {

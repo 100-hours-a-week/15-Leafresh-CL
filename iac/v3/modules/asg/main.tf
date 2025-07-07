@@ -1,4 +1,5 @@
 resource "aws_autoscaling_group" "this" {
+  count = length(var.launch_template_ids)
   name                      = "${var.project_name}-asg"
   desired_capacity          = var.desired_capacity
   min_size                  = var.min_size
@@ -8,11 +9,11 @@ resource "aws_autoscaling_group" "this" {
   health_check_grace_period = 60
 
   launch_template {
-    id      = var.launch_template_id
+    id      = var.launch_template_ids[count.index]
     version = "$Latest"
   }
 
-  target_group_arns = [var.target_group_arn]
+  target_group_arns = var.target_group_arns
 
   tag {
     key                 = "Name"

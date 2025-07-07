@@ -4,6 +4,8 @@ resource "aws_lb" "this" {
   load_balancer_type         = "network"
   subnets                    = var.subnet_ids
   enable_deletion_protection = false
+
+  tags = { Name = "${var.project_name}-nlb" }
 }
 
 # 2) Target Group (TCP 80)
@@ -21,6 +23,7 @@ resource "aws_lb_target_group" "be" {
     interval            = 10
     timeout             = 5
   }
+  tags = { Name = "${var.project_name}-nlb-tg-be" }
 }
 
 # 3) Listener (TCP:80 → BE TG)
@@ -36,7 +39,7 @@ resource "aws_lb_listener" "tcp_80" {
 }
 
 # 4) 인스턴스 등록 (for_each 로 여러 인스턴스도 지원)
-resource "aws_lb_target_group_attachment" "be_attach" {
+resource "aws_lb_target_group_attachment" "be" {
   count             = length(var.instance_ids)        # plan 시점에 알 수 있는 개수
   target_group_arn  = aws_lb_target_group.be.arn
   target_id         = var.instance_ids[count.index]   # apply 시점에 결정된 ID

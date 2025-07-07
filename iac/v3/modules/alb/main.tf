@@ -33,9 +33,10 @@ resource "aws_lb_target_group" "be" {
   vpc_id   = var.vpc_id
 
   health_check {
-    path                = "/api"
+    path                = "/api/challenges/group/categories"
     healthy_threshold   = 2
     unhealthy_threshold = 2
+    timeout             = 5
     interval            = 30
     matcher             = "200-399"
   }
@@ -130,22 +131,22 @@ resource "aws_lb_listener_rule" "argocd_rule" {
   }
 }
 
-resource "aws_lb_target_group_attachment" "fe_attach" {
+resource "aws_lb_target_group_attachment" "fe" {
   target_group_arn = aws_lb_target_group.fe.arn
   target_id        = var.instance_id_k8s_worker_fe
   port             = 80
 }
-resource "aws_lb_target_group_attachment" "be_attach" {
+resource "aws_lb_target_group_attachment" "be" {
   target_group_arn = aws_lb_target_group.be.arn
   target_id        = var.instance_id_k8s_worker_be
   port             = 80
 }
-resource "aws_lb_target_group_attachment" "mon_attach" {
+resource "aws_lb_target_group_attachment" "monitor" {
   target_group_arn = aws_lb_target_group.monitoring.arn
   target_id        = var.instance_id_monitoring
   port             = 80
 }
-resource "aws_lb_target_group_attachment" "argo_attach" {
+resource "aws_lb_target_group_attachment" "argocd" {
   target_group_arn = aws_lb_target_group.argocd.arn
   target_id        = var.instance_id_argocd
   port             = 80

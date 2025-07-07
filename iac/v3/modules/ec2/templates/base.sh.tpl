@@ -112,4 +112,29 @@ case "${node_name}" in
     kubectl apply -n argocd \
       -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
     ;;
+
+  "redis")
+    # 1) kubeconfig 다운로드
+    mkdir -p /home/ubuntu/.kube
+    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    chown -R ubuntu:ubuntu /home/ubuntu/.kube
+    export KUBECONFIG=/home/ubuntu/.kube/config
+
+    # 2) Redis 설치
+    kubectl create namespace redis || true
+
+    # Helm 설치 안되어 있으면 설치
+    if ! command -v helm &> /dev/null; then
+      curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    fi
+
+    # Redis 설치 (Bitnami Chart)
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update
+
+    helm install my-redis bitnami/redis \
+      --namespace redis \
+      --set auth.enabled=false
+    ;;
+
 esac

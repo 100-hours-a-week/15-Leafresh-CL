@@ -129,12 +129,12 @@ output "nlb_dns_name" {
 ///////////////////////////////////////////////////////////////////////////////
 // ASG 모듈 (k8s-worker 전용)
 ///////////////////////////////////////////////////////////////////////////////
-output "asg_name" {
+output "asg_names" {
   description = "Auto Scaling Group Name for k8s-worker"
-  value       = module.asg.asg_name
+  value       = module.asg.asg_names
 }
 
-output "asg_arn" {
+output "asg_arns" {
   description = "Auto Scaling Group ARN for k8s-worker"
-  value       = module.asg.asg_arn
+  value       = module.asg.asg_arns
 }
