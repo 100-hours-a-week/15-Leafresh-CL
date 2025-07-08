@@ -95,36 +95,36 @@ output "ec2_private_ips" {
   value       = module.ec2.private_ips
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// ALB 모듈
-///////////////////////////////////////////////////////////////////////////////
-output "alb_arn" {
-  description = "Application Load Balancer ARN"
-  value       = module.alb.arn
-}
+# ///////////////////////////////////////////////////////////////////////////////
+# // ALB 모듈
+# ///////////////////////////////////////////////////////////////////////////////
+# output "alb_arn" {
+#   description = "Application Load Balancer ARN"
+#   value       = module.alb.arn
+# }
 
-output "alb_dns_name" {
-  description = "Application Load Balancer DNS name"
-  value       = module.alb.dns_name
-}
+# output "alb_dns_name" {
+#   description = "Application Load Balancer DNS name"
+#   value       = module.alb.dns_name
+# }
 
-output "alb_target_group_arn_fe" {
-  description = "ALB Target Group ARN"
-  value       = module.alb.target_group_arn_fe
-}
+# output "alb_target_group_arn_fe" {
+#   description = "ALB Target Group ARN"
+#   value       = module.alb.target_group_arn_fe
+# }
 
-///////////////////////////////////////////////////////////////////////////////
-// NLB 모듈
-///////////////////////////////////////////////////////////////////////////////
-output "nlb_arn" {
-  description = "Application Load Balancer ARN"
-  value       = module.nlb.arn
-}
+# ///////////////////////////////////////////////////////////////////////////////
+# // NLB 모듈
+# ///////////////////////////////////////////////////////////////////////////////
+# output "nlb_arn" {
+#   description = "Application Load Balancer ARN"
+#   value       = module.nlb.arn
+# }
 
-output "nlb_dns_name" {
-  description = "Application Load Balancer DNS name"
-  value       = module.nlb.dns_name
-}
+# output "nlb_dns_name" {
+#   description = "Application Load Balancer DNS name"
+#   value       = module.nlb.dns_name
+# }
 
 ///////////////////////////////////////////////////////////////////////////////
 // ASG 모듈 (k8s-worker 전용)
@@ -137,4 +137,16 @@ output "asg_names" {
 output "asg_arns" {
   description = "Auto Scaling Group ARN for k8s-worker"
   value       = module.asg.asg_arns
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// VPN 모듈
+///////////////////////////////////////////////////////////////////////////////
+output "vpn_endpoint_id" {
+  description = "Endpoint ID of Client VPN"
+  value       = module.vpn.endpoint_id
+}
+output "vpn_endpoint_dns" {
+  description = "Endpoint DNS of Client VPN"
+  value       = module.vpn.endpoint_dns_name
 }

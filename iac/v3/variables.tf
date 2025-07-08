@@ -1,5 +1,23 @@
 # variables.tf
 
+# k8s variables
+# =====================================================================
+variable "kubeconfig_path" {
+  description = "Config file of k8s"
+  type        = string
+  default     = "/home/ubuntu/.kube/config"
+}
+
+variable "k8s_service_namespace" {
+  description = "Name of Service Namespace of k8s"
+  type        = string
+  default     = "service"
+}
+
+
+
+# =====================================================================================================
+
 
 # default variables
 # =====================================================================
@@ -15,6 +33,18 @@ variable "region" {
   default     = "ap-northeast-2"
 }
 
+variable "gcp_region" {
+  description = "GCP region"
+  type        = string
+  default     = "asia-northeast3"
+}
+
+variable "gcp_project_id" {
+  description = "Project Name of GCP that includes Cloud DNS"
+  type        = string
+  default     = "leafresh"
+}
+
 
 
 # tag variables
@@ -27,7 +57,7 @@ variable "tag_environment" {
 
 
 
-# vpc variables
+# VPC variables
 # =====================================================================
 variable "vpc_cidr_block" {
   description = "The CIDR block for the VPC (e.g., 10.0.0.0/18)."
@@ -148,25 +178,25 @@ locals {
       name          = "monitoring"
       ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.small"
+      subnet_id     = module.subnets.private_subnet_ids_map["c-1"]
+      role          = "k8s"
+    },
+    {
+      name          = "master"
+      ami           = "ami-0662f4965dfc70aca"
+      instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
-      name          = "k8s-master"
+      name          = "fe"
       ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
-      name          = "k8s-worker-fe"
-      ami           = "ami-0662f4965dfc70aca"
-      instance_type = "t3.medium"
-      subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
-      role          = "k8s"
-    },
-    {
-      name          = "k8s-worker-be"
+      name          = "be"
       ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
@@ -194,10 +224,17 @@ locals {
       role          = "gpu"
     },
     {
-      name          = "redis"
+      name          = "redis-master"
       ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["a-2"]
+      role          = "k8s"
+    },
+    {
+      name          = "redis-slave"
+      ami           = "ami-0662f4965dfc70aca"
+      instance_type = "t3.small"
+      subnet_id     = module.subnets.private_subnet_ids_map["c-2"]
       role          = "k8s"
     },
   ]
@@ -227,26 +264,66 @@ variable "ecr_repository_names" {
 
 # DNS variables
 # =====================================================================
-variable "domain_name" {
-  description = "Name of domain url"
-  type        = string
-  default     = "dev-leafresh.app"
-}
-
-variable "dns_ttl" {
-  description = "ttl of DNS"
-  type        = string
-  default     = 300
-}
-
-variable "gcp_managed_zone" {
+variable "gcp_dns_zone_name" {
   description = "Managed Zone of GCP DNS"
   type        = string
+  default     = "dev-leafresh.app."
+}
+
+variable "gcp_dns_domain_name" {
+  description = "Domain name of GCP DNS"
+  type        = string
   default     = "dev-leafresh.app"
 }
 
-variable "gcp_project_name" {
-  description = "Project Name of GCP that includes Cloud DNS"
+
+# ACM variables
+# =====================================================================
+variable "vpn_server_domain" {
+  description = "Server Domain of VPN"
   type        = string
-  default     = "leafresh"
+  default     = "vpn.dev-leafresh.app"
+}
+
+variable "vpn_client_domain" {
+  description = "Client Domain of VPN"
+  type        = string
+  default     = "client.dev-leafresh.app"
+}
+
+
+# VPN variables
+# =====================================================================
+locals {
+  all_subnet_ids = concat(
+    module.subnets.public_subnet_ids,
+    module.subnets.private_subnet_ids
+  )
+
+  subnet_map = zipmap(
+    [for idx, val in local.all_subnet_ids : "subnet-${idx}"],
+    local.all_subnet_ids
+  )
+}
+
+variable "vpn_client_cidr_block" {
+  description = "CIDR block assigned to VPN"
+  type        = string
+  default     = "10.0.30.0/24"
+}
+
+
+
+# LB Controller variables
+# =====================================================================
+variable "cluster_oidc_url" {
+  description = "CIDR block assigned to VPN"
+  type        = string
+  default     = ""
+}
+
+variable "cluster_oidc_thumbprint" {
+  description = "CIDR block assigned to VPN"
+  type        = string
+  default     = ""
 }

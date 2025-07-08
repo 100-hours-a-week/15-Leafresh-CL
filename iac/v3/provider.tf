@@ -33,5 +33,16 @@ provider "aws" {
 }
 
 provider "google" {
-  project = var.gcp_project_name
+  project = var.gcp_project_id
+  region  = var.gcp_region
+}
+
+provider "kubernetes" {
+  config_path = var.kubeconfig_path
+}
+
+provider "helm" {
+  kubernetes = {
+    config_path = var.kubeconfig_path
+  }
 }
