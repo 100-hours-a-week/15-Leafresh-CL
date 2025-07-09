@@ -300,9 +300,7 @@ variable "vpn_client_domain" {
 locals {
   subnet_map = {
     "a-1" = module.subnets.private_subnet_ids_map["a-1"]
-    "a-2" = module.subnets.private_subnet_ids_map["a-2"]
     "c-1" = module.subnets.private_subnet_ids_map["c-1"]
-    "c-2" = module.subnets.private_subnet_ids_map["c-2"]
   }
 }
 
@@ -310,7 +308,7 @@ locals {
 variable "vpn_client_cidr_block" {
   description = "CIDR block assigned to VPN"
   type        = string
-  default     = "10.1.0.0/22"
+  default     = "10.100.0.0/22"
 }
 
 

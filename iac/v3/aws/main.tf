@@ -124,6 +124,10 @@ module "vpn" {
   server_certificate_arn      = module.acm_vpn_server_req.certificate_arn
   client_root_certificate_arn = module.acm_vpn_client_req.certificate_arn
   client_cidr_block           = var.vpn_client_cidr_block
+  depends_on              = [
+    module.acm_server_val.validation_complete,
+    module.acm_client_val.validation_complete
+  ]
 }
 
 

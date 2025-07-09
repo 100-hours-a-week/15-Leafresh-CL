@@ -38,4 +38,4 @@ terraform.rc
 note.txt
 
 # Ignore Keys
-./modules/ec2/keys/*
+modules/ec2/keys/**
