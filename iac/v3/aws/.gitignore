@@ -36,3 +36,6 @@ terraform.rc
 
 # Ignore note
 note.txt
+
+# Ignore Keys
+keys/
