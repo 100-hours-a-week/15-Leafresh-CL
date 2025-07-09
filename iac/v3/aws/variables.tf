@@ -297,34 +297,14 @@ variable "vpn_client_domain" {
 
 # VPN variables
 # =====================================================================
-data "aws_subnet" "subnet_info" {
-  for_each = toset(local.all_subnet_ids)
-  id       = each.value
-}
-
 locals {
-  all_subnet_ids = [
-    module.subnets.private_subnet_ids_map["a-1"],
-    module.subnets.private_subnet_ids_map["a-2"],
-    module.subnets.private_subnet_ids_map["c-1"],
-    module.subnets.private_subnet_ids_map["c-2"],
-  ]
-
-  # AZ별 subnet 정보 추출
-  az_subnet_pairs = distinct([
-    for subnet_id in local.all_subnet_ids : {
-      az         = data.aws_subnet.subnet_info[subnet_id].availability_zone
-      subnet_id  = subnet_id
-    }
-  ])
-
-  # AZ당 첫 번째 subnet만 map으로 정리
   subnet_map = {
-    for idx, pair in local.az_subnet_pairs :
-    "subnet-${idx}" => pair.subnet_id
+    "a-1" = module.subnets.private_subnet_ids_map["a-1"]
+    "a-2" = module.subnets.private_subnet_ids_map["a-2"]
+    "c-1" = module.subnets.private_subnet_ids_map["c-1"]
+    "c-2" = module.subnets.private_subnet_ids_map["c-2"]
   }
 }
-
 
 
 variable "vpn_client_cidr_block" {
