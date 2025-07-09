@@ -4,6 +4,7 @@ MODULES := aws k8s
 # Terraform 명령어
 TF := terraform
 TF_INIT := $(TF) init
+TF_VALIDATE := $(TF) validate
 TF_PLAN := $(TF) plan
 TF_APPLY := $(TF) apply -auto-approve
 TF_DESTROY := $(TF) destroy -auto-approve
@@ -17,6 +18,12 @@ init:
 	@echo "Initializing all modules..."
 	@for module in $(MODULES); do \
 		cd modules/$$module && $(TF_INIT) && cd - >/dev/null; \
+	done
+
+validate:
+	@echo "Initializing all modules..."
+	@for module in $(MODULES); do \
+		cd modules/$$module && $(TF_VALIDATE) && cd - >/dev/null; \
 	done
 
 plan:

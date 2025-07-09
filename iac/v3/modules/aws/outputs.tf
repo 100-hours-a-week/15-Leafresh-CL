@@ -74,25 +74,40 @@ output "ecr_repository_urls" {
 // EC2 모듈
 ///////////////////////////////////////////////////////////////////////////////
 // 모든 노드별 Launch Template ID 맵 (key = ec2_nodes[].name)
-output "ec2_launch_templates" {
-  description = "Map of EC2 Launch Template IDs"
-  value       = module.ec2.launch_templates
-}
+# output "ec2_launch_templates" {
+#   description = "Map of EC2 Launch Template IDs"
+#   value       = module.ec2.launch_templates
+# }
 
 // EC2 인스턴스 정보
-output "ec2_instance_ids" {
+output "ec2_master_ids" {
   description = "List of EC2 instance IDs"
-  value       = module.ec2.instance_ids
+  value       = module.ec2_master.instance_ids
 }
 
-output "ec2_public_ips" {
+output "ec2_master_public_ips" {
   description = "List of EC2 public IP addresses (GPU 등)"
-  value       = module.ec2.public_ips
+  value       = module.ec2_master.public_ips
 }
 
-output "ec2_private_ips" {
+output "ec2_master_private_ips" {
   description = "List of EC2 private IP addresses"
-  value       = module.ec2.private_ips
+  value       = module.ec2_master.private_ips
+}
+
+output "ec2_worker_instance_ids" {
+  description = "List of EC2 instance IDs"
+  value       = module.ec2_worker.instance_ids
+}
+
+output "ec2_worker_public_ips" {
+  description = "List of EC2 public IP addresses (GPU 등)"
+  value       = module.ec2_worker.public_ips
+}
+
+output "ec2_worker_private_ips" {
+  description = "List of EC2 private IP addresses"
+  value       = module.ec2_worker.private_ips
 }
 
 # ///////////////////////////////////////////////////////////////////////////////

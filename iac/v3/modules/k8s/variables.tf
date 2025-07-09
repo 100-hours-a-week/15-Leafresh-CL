@@ -21,3 +21,9 @@ variable "tag_environment" {
   type        = string
   default     = "Dev"
 }
+
+variable "gcp_dns_domain_name" {
+  description = "Domain name of GCP DNS"
+  type        = string
+  default     = "dev-leafresh.app"
+}

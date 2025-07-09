@@ -1,14 +1,21 @@
 # main.tf
+data "terraform_remote_state" "leafresh" {
+  backend = "local"
+
+  config = {
+    path = "${path.module}/../aws/terraform.tfstate"  # 또는 절대경로 사용
+  }
+}
 
 
 # k8s modules
 # =====================================================================
 module "ns_frontend" {
-  source    = "./modules/k8s/namespace"
+  source    = "./modules/namespace"
   namespace = "frontend"
 }
 module "fe" {
-  source    = "./modules/k8s/deployment"
+  source    = "./modules/deployment"
   name      = "fe"
   namespace = module.ns_frontend.namespace
   image     = "${module.ecr.repository_urls["ecr"]}/frontend-develop:latest"
@@ -17,7 +24,7 @@ module "fe" {
 }
 
 module "fe_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "fe-service"
   namespace   = module.ns_frontend.namespace
   port        = 80
@@ -25,7 +32,7 @@ module "fe_svc" {
   type        = "ClusterIP"
 }
 module "fe_ingress" {
-  source              = "./modules/k8s/ingress"
+  source              = "./modules/ingress"
   name                = "${var.project_name}-k8s-ingress"
   namespace           = module.ns_frontend.namespace
   domain_name         = var.gcp_dns_domain_name
@@ -37,11 +44,11 @@ module "fe_ingress" {
 
 
 module "ns_backend" {
-  source    = "./modules/k8s/namespace"
+  source    = "./modules/namespace"
   namespace = "backend"
 }
 module "be" {
-  source    = "./modules/k8s/deployment"
+  source    = "./modules/deployment"
   name      = "be"
   namespace = module.ns_backend.namespace
   image     = "${module.ecr.repository_urls["ecr"]}/backend-develop:latest"
@@ -49,7 +56,7 @@ module "be" {
   replicas  = 1
 }
 module "be_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "be-service"
   namespace   = module.ns_backend.namespace
   port        = 80
@@ -59,12 +66,12 @@ module "be_svc" {
 
 
 module "ns_ai" {
-  source    = "./modules/k8s/namespace"
+  source    = "./modules/namespace"
   namespace = "ai"
 }
 
 module "ai" {
-  source    = "./modules/k8s/deployment"
+  source    = "./modules/deployment"
   name      = "ai"
   namespace = module.ns_ai.namespace
   image     = "${module.ecr.repository_urls["ecr"]}/ai-develop:latest"
@@ -73,7 +80,7 @@ module "ai" {
 }
 
 module "ai_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "ai-service"
   namespace   = module.ns_ai.namespace
   port        = 8000
@@ -83,21 +90,21 @@ module "ai_svc" {
 
 
 module "ns_redis" {
-  source    = "./modules/k8s/namespace"
+  source    = "./modules/namespace"
   namespace = "redis"
 }
 
 module "redis_cfg" {
-  source    = "./modules/k8s/configmap"
+  source    = "./modules/configmap"
   name      = "redis-config"
   namespace = module.ns_redis.namespace
   data = {
-    "redis.conf" = file("${path.module}/modules/k8s/templates/redis.conf")
+    "redis.conf" = file("${path.module}/modules/templates/redis.conf")
   }
 }
 
 module "redis_master" {
-  source          = "./modules/k8s/statefulset"
+  source          = "./modules/statefulset"
   name            = "redis-master"
   namespace       = module.ns_redis.namespace
   service_name    = "redis-master"
@@ -108,7 +115,7 @@ module "redis_master" {
 }
 
 module "redis_slave" {
-  source          = "./modules/k8s/statefulset"
+  source          = "./modules/statefulset"
   name            = "redis-slave"
   namespace       = module.ns_redis.namespace
   service_name    = "redis-slave"
@@ -119,7 +126,7 @@ module "redis_slave" {
 }
 
 module "redis_master_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "redis-master"
   namespace   = module.ns_redis.namespace
   port        = 6379
@@ -128,7 +135,7 @@ module "redis_master_svc" {
 }
 
 module "redis_slave_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "redis-slave"
   namespace   = module.ns_redis.namespace
   port        = 6379
@@ -138,12 +145,12 @@ module "redis_slave_svc" {
 
 
 module "ns_monitoring" {
-  source    = "./modules/k8s/namespace"
+  source    = "./modules/namespace"
   namespace = "monitoring"
 }
 
 module "prometheus" {
-  source    = "./modules/k8s/deployment"
+  source    = "./modules/deployment"
   name      = "prometheus"
   namespace = module.ns_monitoring.namespace
   image     = "prom/prometheus:latest"
@@ -155,7 +162,7 @@ module "prometheus" {
 }
 
 module "prometheus_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "prometheus"
   namespace   = module.ns_monitoring.namespace
   port        = 9090
@@ -164,7 +171,7 @@ module "prometheus_svc" {
 }
 
 module "loki" {
-  source    = "./modules/k8s/deployment"
+  source    = "./modules/deployment"
   name      = "loki"
   namespace = module.ns_monitoring.namespace
   image     = "grafana/loki:latest"
@@ -176,7 +183,7 @@ module "loki" {
 }
 
 module "loki_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "loki"
   namespace   = module.ns_monitoring.namespace
   port        = 3100
@@ -185,7 +192,7 @@ module "loki_svc" {
 }
 
 module "grafana" {
-  source    = "./modules/k8s/deployment"
+  source    = "./modules/deployment"
   name      = "grafana"
   namespace = module.ns_monitoring.namespace
   image     = "grafana/grafana:latest"
@@ -197,7 +204,7 @@ module "grafana" {
 }
 
 module "grafana_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "grafana"
   namespace   = module.ns_monitoring.namespace
   port        = 3000
@@ -206,7 +213,7 @@ module "grafana_svc" {
 }
 
 module "jaeger" {
-  source    = "./modules/k8s/deployment"
+  source    = "./modules/deployment"
   name      = "jaeger"
   namespace = module.ns_monitoring.namespace
   image     = "jaegertracing/all-in-one:latest"
@@ -218,7 +225,7 @@ module "jaeger" {
 }
 
 module "jaeger_svc" {
-  source      = "./modules/k8s/service"
+  source      = "./modules/service"
   name        = "jaeger"
   namespace   = module.ns_monitoring.namespace
   port        = 16686
@@ -227,7 +234,7 @@ module "jaeger_svc" {
 }
 
 module "monitor_ingress" {
-  source              = "./modules/k8s/ingress"
+  source              = "./modules/ingress"
   name                = "monitoring-ingress"
   namespace           = module.ns_monitoring.namespace
   domain_name         = "monitor.leafresh.app"

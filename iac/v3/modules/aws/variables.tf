@@ -173,7 +173,7 @@ variable "sqs_fifo_max_receive_count" {
 # EC2 variables & locals
 # =====================================================================
 locals {
-  ec2_nodes = [
+  ec2_master_node = [
     {
       name          = "monitoring"
       ami           = "ami-0662f4965dfc70aca"
@@ -181,6 +181,9 @@ locals {
       subnet_id     = module.subnets.private_subnet_ids_map["c-1"]
       role          = "k8s"
     },
+  ]
+  
+  ec2_worker_nodes = [
     {
       name          = "master"
       ami           = "ami-0662f4965dfc70aca"
