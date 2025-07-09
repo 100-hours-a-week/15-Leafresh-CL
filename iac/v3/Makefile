@@ -1,7 +1,5 @@
-# 사용할 모듈 목록
 MODULES := aws k8s
 
-# Terraform 명령어
 TF := terraform
 TF_INIT := $(TF) init
 TF_VALIDATE := $(TF) validate
@@ -9,9 +7,8 @@ TF_PLAN := $(TF) plan
 TF_APPLY := $(TF) apply -auto-approve
 TF_DESTROY := $(TF) destroy -auto-approve
 
-.PHONY: all init plan apply destroy $(foreach module,$(MODULES),init-$(module) plan-$(module) apply-$(module) destroy-$(module))
+.PHONY: all init validate plan apply destroy $(foreach module,$(MODULES),init-$(module) validate-$(module) plan-$(module) apply-$(module) destroy-$(module))
 
-# 전체 모듈 처리
 all: init plan
 
 init:
@@ -21,7 +18,7 @@ init:
 	done
 
 validate:
-	@echo "Initializing all modules..."
+	@echo "Validating all modules..."
 	@for module in $(MODULES); do \
 		cd $$module && $(TF_VALIDATE) && cd - >/dev/null; \
 	done
@@ -44,10 +41,11 @@ destroy:
 		cd $$module && $(TF_DESTROY) && cd - >/dev/null; \
 	done
 
-# 개별 모듈 명령
-$(foreach module,$(MODULES),\
-	init-$(module): ; cd $(module) && $(TF_INIT) ;\
-	plan-$(module): ; cd $(module) && $(TF_PLAN) ;\
-	apply-$(module): ; cd $(module) && $(TF_APPLY) ;\
-	destroy-$(module): ; cd $(module) && $(TF_DESTROY) ;\
+# 개별 모듈 명령 정의
+$(foreach module,$(MODULES), \
+	$(eval init-$(module): ; @cd $(module) && $(TF_INIT)) \
+	$(eval validate-$(module): ; @cd $(module) && $(TF_VALIDATE)) \
+	$(eval plan-$(module): ; @cd $(module) && $(TF_PLAN)) \
+	$(eval apply-$(module): ; @cd $(module) && $(TF_APPLY)) \
+	$(eval destroy-$(module): ; @cd $(module) && $(TF_DESTROY)) \
 )
