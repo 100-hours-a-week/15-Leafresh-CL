@@ -153,7 +153,7 @@ variable "rds_multi_az" {
 variable "sqs_fifo_queue_names" {
   description = "List of FIFO SQS queue suffixes"
   type        = list(string)
-  default     = ["order", "images"]
+  default     = ["order", "images", "feedback", "feedback-result", ""]
 }
 
 variable "sqs_fifo_dlq_queue_names" {
@@ -219,7 +219,7 @@ locals {
     {
       name          = "ai-gpu"
       ami           = "ami-060449aa9aa36d665"
-      instance_type = "g4dn.xlarge"
+      instance_type = "t3.xlarge" # "g4dn.xlarge"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "gpu"
     },

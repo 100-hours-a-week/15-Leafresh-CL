@@ -22,9 +22,19 @@ resource "aws_ec2_client_vpn_network_association" "this" {
 
 # VPC 전체 라우트
 resource "aws_ec2_client_vpn_route" "this" {
+  for_each = var.subnet_ids
+
   client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.this.id
   destination_cidr_block = var.vpc_cidr_block
-  target_vpc_subnet_id = var.subnet_ids["subnet-0"]
+  target_vpc_subnet_id   = each.value
+
+  depends_on = [
+    aws_ec2_client_vpn_network_association.this
+  ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # 모든 그룹에 인가 규칙 허용
