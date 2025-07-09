@@ -4,6 +4,7 @@ set -eux
 # ----- 공통 설치 -----
 apt-get update
 apt-get install -y docker.io apt-transport-https curl awscli jq
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
 # Kubernetes 설치
 curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \

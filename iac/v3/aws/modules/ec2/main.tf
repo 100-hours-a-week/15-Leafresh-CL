@@ -2,7 +2,7 @@
 # Security Groups
 # ────────────────────────────────────────────────────────────────────────────────
 resource "aws_security_group" "k8s" {
-  name        = "${var.project_name}-sg-k8s"
+  name_prefix        = "${var.project_name}-sg-k8s-"
   description = "Kubernetes components SG"
   vpc_id      = var.vpc_id
 
@@ -109,7 +109,7 @@ resource "aws_security_group" "k8s" {
 }
 
 resource "aws_security_group" "gpu" {
-  name        = "${var.project_name}-sg-gpu"
+  name_prefix        = "${var.project_name}-sg-gpu-"
   description = "Instance using GPU"
   vpc_id      = var.vpc_id
   # SSH
@@ -168,10 +168,28 @@ resource "aws_security_group" "gpu" {
 # ────────────────────────────────────────────────────────────────────────────────
 # Key Pairs
 # ────────────────────────────────────────────────────────────────────────────────
-resource "aws_key_pair" "this" {
-  key_name   = "${var.project_name}-keypair" # 원하는 이름
-  public_key = file("~/.ssh/id_ed25519.pub") # 본인 로컬 공개키 경로
+resource "tls_private_key" "ec2" {
+  for_each = { for node in var.ec2_nodes : node.name => node }
+
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
+
+resource "aws_key_pair" "ec2" {
+  for_each   = tls_private_key.ec2
+  key_name   = "${var.project_name}-keypair-${each.key}"
+  public_key = each.value.public_key_openssh
+}
+
+resource "local_file" "private_key" {
+  for_each = tls_private_key.ec2
+
+  content  = each.value.private_key_pem
+  filename = "${path.module}/keys/${each.key}.pem"
+  file_permission = "0400"
+}
+
+
 
 # ────────────────────────────────────────────────────────────────────────────────
 # EC2 Instances
@@ -181,7 +199,8 @@ resource "aws_instance" "nodes" {
   ami                         = each.value.ami
   instance_type               = each.value.instance_type
   subnet_id                   = each.value.subnet_id
-  associate_public_ip_address = each.value.role == "gpu" ? true : false
+  key_name                    = aws_key_pair.ec2[each.key].key_name
+  associate_public_ip_address = each.value.role == "gpu"
 
   vpc_security_group_ids = [
     each.value.role == "gpu"
@@ -200,7 +219,7 @@ resource "aws_launch_template" "template" {
   image_id      = each.value.ami
   instance_type = each.value.instance_type
 
-  key_name = aws_key_pair.this.key_name # lookup(each.value, "key_name", null)
+  # key_name = aws_key_pair.this.key_name # lookup(each.value, "key_name", null)
   user_data = base64encode(
     templatefile(
       "${path.module}/templates/base.sh.tpl",

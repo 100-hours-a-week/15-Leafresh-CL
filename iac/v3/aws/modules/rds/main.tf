@@ -2,6 +2,12 @@
 resource "aws_db_subnet_group" "this" {
   name       = "${var.project_name}-db-subnet-group"
   subnet_ids = var.subnet_ids
+
+  lifecycle {
+    create_before_destroy = true
+    prevent_destroy       = false
+  }
+
   tags = {
     Name = "${var.project_name}-db-subnet-group"
   }

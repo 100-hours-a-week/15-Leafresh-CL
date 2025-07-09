@@ -153,13 +153,13 @@ variable "rds_multi_az" {
 variable "sqs_fifo_queue_names" {
   description = "List of FIFO SQS queue suffixes"
   type        = list(string)
-  default     = ["order", "images", "feedback", "feedback-result", ""]
+  default     = ["order", "image", "feedback", "feedback-result", "auth-result"]
 }
 
 variable "sqs_fifo_dlq_queue_names" {
   description = "List of FIFO SQS queues that require DLQ"
   type        = list(string)
-  default     = ["order"]
+  default     = ["order", "image", "feedback-result"]
 }
 
 variable "sqs_fifo_max_receive_count" {
@@ -270,7 +270,7 @@ variable "ecr_repository_names" {
 variable "gcp_dns_zone_name" {
   description = "Managed Zone of GCP DNS"
   type        = string
-  default     = "dev-leafresh.app."
+  default     = "dev-leafresh-app"
 }
 
 variable "gcp_dns_domain_name" {
@@ -297,22 +297,40 @@ variable "vpn_client_domain" {
 
 # VPN variables
 # =====================================================================
-locals {
-  all_subnet_ids = concat(
-    module.subnets.public_subnet_ids,
-    module.subnets.private_subnet_ids
-  )
-
-  subnet_map = zipmap(
-    [for idx, val in local.all_subnet_ids : "subnet-${idx}"],
-    local.all_subnet_ids
-  )
+data "aws_subnet" "subnet_info" {
+  for_each = toset(local.all_subnet_ids)
+  id       = each.value
 }
+
+locals {
+  all_subnet_ids = [
+    module.subnets.private_subnet_ids_map["a-1"],
+    module.subnets.private_subnet_ids_map["a-2"],
+    module.subnets.private_subnet_ids_map["c-1"],
+    module.subnets.private_subnet_ids_map["c-2"],
+  ]
+
+  # AZ별 subnet 정보 추출
+  az_subnet_pairs = distinct([
+    for subnet_id in local.all_subnet_ids : {
+      az         = data.aws_subnet.subnet_info[subnet_id].availability_zone
+      subnet_id  = subnet_id
+    }
+  ])
+
+  # AZ당 첫 번째 subnet만 map으로 정리
+  subnet_map = {
+    for idx, pair in local.az_subnet_pairs :
+    "subnet-${idx}" => pair.subnet_id
+  }
+}
+
+
 
 variable "vpn_client_cidr_block" {
   description = "CIDR block assigned to VPN"
   type        = string
-  default     = "10.0.30.0/24"
+  default     = "10.1.0.0/22"
 }
 
 
