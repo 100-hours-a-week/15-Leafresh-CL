@@ -14,10 +14,6 @@ terraform {
       source  = "hashicorp/helm"
       version = "3.0.2"
     }
-    google = {
-      source  = "hashicorp/google"
-      version = "6.42.0"
-    }
   }
 }
 
@@ -32,17 +28,12 @@ provider "aws" {
   }
 }
 
-provider "google" {
-  project = var.gcp_project_id
-  region  = var.gcp_region
-}
-
 provider "kubernetes" {
   config_path = var.kubeconfig_path
 }
 
 provider "helm" {
-  kubernetes = {
+  kubernetes {
     config_path = var.kubeconfig_path
   }
 }
