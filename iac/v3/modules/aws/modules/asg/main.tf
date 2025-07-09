@@ -1,23 +1,24 @@
 resource "aws_autoscaling_group" "this" {
-  count                     = length(var.launch_template_ids)
-  name                      = "${var.project_name}-asg"
-  desired_capacity          = var.desired_capacity
-  min_size                  = var.min_size
-  max_size                  = var.max_size
-  vpc_zone_identifier       = var.subnet_ids
-  health_check_type         = "ELB"
-  health_check_grace_period = 60
+  for_each = var.launch_template_ids
+
+  name_prefix          = "${var.project_name}-${each.key}-asg-"
+  max_size             = var.max_size
+  min_size             = var.min_size
+  desired_capacity     = var.desired_capacity
+  vpc_zone_identifier  = var.subnet_ids
 
   launch_template {
-    id      = var.launch_template_ids[count.index]
+    id      = each.value
     version = "$Latest"
   }
 
-  # target_group_arns = var.target_group_arns
-
   tag {
     key                 = "Name"
-    value               = "${var.project_name}-asg-instance"
+    value               = "${var.project_name}-${each.key}"
     propagate_at_launch = true
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
