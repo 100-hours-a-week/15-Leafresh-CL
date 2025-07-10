@@ -1,36 +1,30 @@
 name: AI Project CI/CD
 
 on:
+  pull_request:
+    branches: [develop, main]
   push:
     tags:
       - 'v*-kellyn-dev'
       - 'v*-mac-dev'
-      - 'v1.*'
-  pull_request:
-    branches:
-      - develop
-      - main
-
+      # - 'v*-prod'
   workflow_dispatch:
     inputs:
       target_test:
-        description: '수행할 대상(AI 프로젝트)을 선택하세요'
+        description: '수행할 대상(디렉토리)를 선택하세요'
         required: true
         type: choice
         options:
           - kellyn-dev
           - mac-dev
-          - api-prod
+          # - api-prod
 
 
 jobs:
-  unit-and-integration-test-model:
+  unit-and-integration-test:
     name: Unit Test & Integration Test - 자체 모델
     if: github.event_name == 'workflow_dispatch' && contains(github.event.inputs.target_test, '-dev')
     runs-on: ubuntu-latest
-    # defaults:
-    #   run:
-    #     working-directory: ${{ contains(github.event.inputs.target_test, 'mac') && './Text/LLM' || './Image' }}
     env:
       GOOGLE_CREDENTIAL_JSON_BASE64: ${{ secrets.GCP_SA_KEY_DEV_BASE64 }}
       ENV_DEV: ${{ secrets.ENV_AI_DEV }}
@@ -66,7 +60,7 @@ jobs:
             cd Text/LLM
             pip install -r requirements.txt
           else
-            cd Image
+            cd Server1
             pip install -r requirements.txt
           fi
       
@@ -75,7 +69,7 @@ jobs:
           if [[ "${{ github.event.inputs.target_test }}" == *"mac"* ]]; then
             cd Text/LLM && python censorship_unit_test.py
           else
-            cd Image && python verify_unit_test.py
+            cd Server1 && python verify_unit_test.py
           fi
       
       - name: Run Integration Test
@@ -87,7 +81,7 @@ jobs:
             cat uvicorn.log
             chmod +x censorship_curl_test.sh && ./censorship_curl_test.sh
           else
-            cd Image
+            cd Server1
             nohup uvicorn main:app --host 0.0.0.0 --port 8000 --reload --env-file $GITHUB_WORKSPACE/.env > uvicorn.log 2>&1 &
             sleep 30
             cat uvicorn.log
@@ -97,64 +91,12 @@ jobs:
       - name: Terminate uvicorn
         run: pkill -f "uvicorn"
 
-  unit-and-integration-test-api:
-    name: Unit Test & Integration Test - API
-    if: github.event_name == 'workflow_dispatch' && contains(github.event.inputs.target_test, '-prod')
-    runs-on: ubuntu-latest
-    env:
-      GOOGLE_CREDENTIAL_JSON_BASE64: ${{ secrets.GCP_SA_KEY_DEV_BASE64 }}
-      ENV_DEV: ${{ secrets.ENV_AI_DEV }}
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-
-      - name: Get env files & Google Credentials
-        run: |
-          set -a
-          echo "$ENV_DEV" > .env
-
-          while IFS= read -r line; do
-            if [[ "$line" == *=* && "$line" != \#* ]]; then
-              echo "$line" >> $GITHUB_ENV
-            fi
-          done < .env
-
-          filename=$(grep "^GOOGLE_APPLICATION_CREDENTIALS=" .env | cut -d '=' -f2)
-          echo "$GOOGLE_CREDENTIAL_JSON_BASE64" | base64 -d > "$filename"
-          jq . "$filename" > /dev/null
-          set +a
-          
-      - name: Install Dependencies
-        run: pip install -r requirements.txt
-      
-      - name: Run Unit Test
-        run: |
-          python censorship_unit_test.py
-          sleep 3
-          python verify_unit_test.py
-      
-      - name: Run Integration Test
-        run: |
-          nohup uvicorn main:app --host 0.0.0.0 --port 8000 --reload --env-file .env > uvicorn.log 2>&1 &
-          sleep 30
-          chmod +x censorship_curl_test.sh && ./censorship_curl_test.sh
-          sleep 3
-          chmod +x verify_curl_test.sh && ./verify_curl_test.sh
-
-      - name: Print Log 
-        run: cat uvicorn.log
-
-      - name: Terminate uvicorn
-        run: pkill -f "uvicorn"
-
-  deploy-model:
-    name: Deploy - 자체 모델
+  deploy-dev:
+    name: Deploy - Dev
     if: startsWith(github.ref, 'refs/tags/v') && (contains(github.ref, 'kellyn') || contains(github.ref, 'mac'))
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
     env:
       GOOGLE_CREDENTIAL_JSON_BASE64: ${{ secrets.GCP_SA_KEY_DEV_BASE64 }}
       ENV_DEV: ${{ secrets.ENV_AI_DEV }}
@@ -165,13 +107,9 @@ jobs:
           REF=${GITHUB_REF#refs/tags/}
           echo "TAG: $REF"
           if [[ "$REF" == *"kellyn-dev" ]]; then
-            echo "dir=Image" >> $GITHUB_OUTPUT
-            echo "host=${{ secrets.SSH_HOST_DEV_KELLYN }}" >> $GITHUB_OUTPUT
-            # echo "env=ENV_AI_DEV" >> $GITHUB_OUTPUT
+            echo "dir=Server1" >> $GITHUB_OUTPUT
           elif [[ "$REF" == *"mac-dev" ]]; then
             echo "dir=Text/LLM" >> $GITHUB_OUTPUT
-            echo "host=${{ secrets.SSH_HOST_DEV_MAC }}" >> $GITHUB_OUTPUT
-            # echo "env=ENV_AI_DEV" >> $GITHUB_OUTPUT
           else
             echo "Unknown tag" && exit 1
           fi
@@ -186,6 +124,7 @@ jobs:
           script: |
             echo "기존 uvicorn 종료 시도"
             for pid in $(pgrep -f uvicorn); do
+              echo "uvicorn 현재 실행중"
               if [ "$pid" != "$$" ]; then
                 echo "Killing uvicorn PID $pid"
                 kill -15 "$pid"
@@ -224,17 +163,11 @@ jobs:
 
             echo "Google Credentials 생성"
             filename=$(grep "GOOGLE_APPLICATION_CREDENTIALS=" .env | sed 's/^[[:space:]]*//' | cut -d '=' -f2 | xargs)
-            
-            # if [ -z "$filename" ]; then
-            #   echo "ERROR: GOOGLE_APPLICATION_CREDENTIALS 키가 .env에 없습니다"
-            #   cat .env
-            #   exit 1
-            # fi
 
             echo "저장할 파일명: $filename"
             echo "${{ secrets.GCP_SA_KEY_DEV_BASE64 }}" | base64 -d > "$filename"
             
-            # 유효한 JSON인지 확인
+            echo "유효한 JSON인지 확인"
             jq . "$filename" > /dev/null || { echo "JSON 파일 확인 실패"; exit 1; }
 
 
@@ -248,7 +181,17 @@ jobs:
             echo "로그 확인"
             sleep 20
             cat uvicorn.log || echo "uvicorn log missing"
-            true  # <-- 이 줄로 무조건 성공 처리
+
+            echo "uvicorn 실행 환경 확인"
+            ps aux | grep uvicorn
+
+            # Check for errors in uvicorn.log
+            if grep -q -iE "Traceback|error|exception|fail" uvicorn.log; then
+              echo "::error::uvicorn.log에서 오류 감지됨"
+              exit 1
+            else
+              echo "배포 성공"
+            fi
             
       - name: Set Status
         id: set-status
@@ -256,57 +199,123 @@ jobs:
         run: echo "status=success" >> "$GITHUB_OUTPUT"
 
       - name: Set Status (Failure)
-        if: failure()
+        if: failure() && steps.deploy-model.outcome == 'failure'
         run: echo "status=failure" >> "$GITHUB_OUTPUT"
 
-  deploy-api:
-    name: Deploy - API
-    if: startsWith(github.ref, 'refs/tags/v1')
+`deploy-prod:
+    name: Deploy - Dev
+    if: startsWith(github.ref, 'refs/tags/v') && (contains(github.ref, 'kellyn') || contains(github.ref, 'mac'))
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
     env:
       GOOGLE_CREDENTIAL_JSON_BASE64: ${{ secrets.GCP_SA_KEY_DEV_BASE64 }}
       ENV_DEV: ${{ secrets.ENV_AI_DEV }}
     steps:
+      - name: Extract service context
+        id: info
+        run: |
+          REF=${GITHUB_REF#refs/tags/}
+          echo "TAG: $REF"
+          if [[ "$REF" == *"kellyn-dev" ]]; then
+            echo "dir=Server1" >> $GITHUB_OUTPUT
+          elif [[ "$REF" == *"mac-dev" ]]; then
+            echo "dir=Text/LLM" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown tag" && exit 1
+          fi
+
       - name: SSH 배포
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST_PROD }}
+          host: ${{ steps.info.outputs.host }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            echo "기존 uvicorn 종료 시도"
+            for pid in $(pgrep -f uvicorn); do
+              echo "uvicorn 현재 실행중"
+              if [ "$pid" != "$$" ]; then
+                echo "Killing uvicorn PID $pid"
+                kill -15 "$pid"
+              fi
+            done
+
+            sleep 5
+
+            echo "기존 소스코드 제거 및 새로운 코드 다운로드"
+            cd /home/${USER:-ubuntu}
+            rm -rf 15-Leafresh-AI
+
+            if [ -d 15-Leafresh-AI ]; then
+              echo "삭제 실패: 디렉토리가 여전히 존재함"
+              exit 1
+            fi
+
+            echo "디렉토리 삭제 성공, git clone 수행"
             git clone https://github.com/100-hours-a-week/15-Leafresh-AI.git
-            cd 15-Leafresh-AI/
+
+            echo "venv 활성화 및 requirements.txt 갱신 확인"
+            source .venv/bin/activate
+            cd 15-Leafresh-AI/${{ steps.info.outputs.dir }}
             pip install -r requirements.txt
-            
-            set -a
-            echo "$ENV_DEV" > .env
+
+            echo "env 파일 생성"
+            cat <<EOF > .env
+              ${{ secrets.ENV_AI_DEV }}
+            EOF
             
             while IFS= read -r line; do
               if [[ "$line" == *=* && "$line" != \#* ]]; then
-                echo "$line" >> $GITHUB_ENV
+                echo "$line"
               fi
             done < .env
-            
-            filename=$(grep "^GOOGLE_APPLICATION_CREDENTIALS=" .env | cut -d '=' -f2)
-            echo "$GOOGLE_CREDENTIAL_JSON_BASE64" | base64 -d > "$filename"
-            jq . "$filename" > /dev/null
-            set +a  
-            
-            nohup uvicorn main:app --host 0.0.0.0 --port 8000 --env-file .env > uvicorn.log 2>&1 &
 
+            echo "Google Credentials 생성"
+            filename=$(grep "GOOGLE_APPLICATION_CREDENTIALS=" .env | sed 's/^[[:space:]]*//' | cut -d '=' -f2 | xargs)
+
+            echo "저장할 파일명: $filename"
+            echo "${{ secrets.GCP_SA_KEY_DEV_BASE64 }}" | base64 -d > "$filename"
+            
+            echo "유효한 JSON인지 확인"
+            jq . "$filename" > /dev/null || { echo "JSON 파일 확인 실패"; exit 1; }
+
+
+            echo "uvicorn 실행"
+            nohup uvicorn main:app --host 0.0.0.0 --port 8000 --env-file .env > uvicorn.log 2>&1 &
+            disown
+
+            echo "venv 종료"
+            deactivate
+
+            echo "로그 확인"
+            sleep 20
+            cat uvicorn.log || echo "uvicorn log missing"
+
+            echo "uvicorn 실행 환경 확인"
+            ps aux | grep uvicorn
+
+            # Check for errors in uvicorn.log
+            if grep -q -iE "Traceback|error|exception|fail" uvicorn.log; then
+              echo "::error::uvicorn.log에서 오류 감지됨"
+              exit 1
+            else
+              echo "배포 성공"
+            fi
+            
       - name: Set Status
         id: set-status
         if: success()
         run: echo "status=success" >> "$GITHUB_OUTPUT"
 
       - name: Set Status (Failure)
-        if: failure()
+        if: failure() && steps.deploy-model.outcome == 'failure'
         run: echo "status=failure" >> "$GITHUB_OUTPUT"
-  
+
   notify:
     name: Discord Notification
-    needs: [deploy-model, deploy-api]
+    needs: [deploy-dev, deploy-prod]
     if: |
       always() &&
       (needs.deploy-model.result != 'skipped' || needs.deploy-api.result != 'skipped')
@@ -327,7 +336,7 @@ jobs:
           if [[ "$STATUS" == "success" ]]; then
             MESSAGE="✅ [${TAG}] 배포 완료"
           elif [[ "$STATUS" == "failure" ]]; then
-            MESSAGE="🚨 [${TAG}] 배포 실패"
+            MESSAGE="🚨 [${TAG}] 배포 실패. actions에서 로그를 확인하세요."
           else
             MESSAGE="⚠️ [${TAG}] 배포 상태를 알 수 없습니다."
           fi
@@ -340,4 +349,3 @@ jobs:
                -X POST \
                -d "{\"content\": \"${{ steps.notify-message.outputs.message }}\"}" \
                ${{ secrets.DISCORD_WEBHOOK_URL }}
-
