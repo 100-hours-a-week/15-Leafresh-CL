@@ -18,7 +18,7 @@ module "fe" {
   source    = "./modules/deployment"
   name      = "fe"
   namespace = module.ns_frontend.namespace
-  image     = "${data.terraform_remote_state.leafresh.outputs.repository_urls["ecr"]}/frontend-develop:latest"
+  image     = "${data.terraform_remote_state.leafresh.outputs.ecr_urls["ecr"]}/frontend-develop:latest"
   port      = 5173
   replicas  = 1
 }
@@ -51,7 +51,7 @@ module "be" {
   source    = "./modules/deployment"
   name      = "be"
   namespace = module.ns_backend.namespace
-  image     = "${data.terraform_remote_state.leafresh.outputs.repository_urls["ecr"]}/backend-develop:latest"
+  image     = "${data.terraform_remote_state.leafresh.outputs.ecr_urls["ecr"]}/backend-develop:latest"
   port      = 3000
   replicas  = 1
 }
@@ -74,7 +74,7 @@ module "ai" {
   source    = "./modules/deployment"
   name      = "ai"
   namespace = module.ns_ai.namespace
-  image     = "${data.terraform_remote_state.leafresh.outputs.repository_urls["ecr"]}/ai-develop:latest"
+  image     = "${data.terraform_remote_state.leafresh.outputs.ecr_urls["ecr"]}/ai-develop:latest"
   port      = 8000
   replicas  = 1
 }

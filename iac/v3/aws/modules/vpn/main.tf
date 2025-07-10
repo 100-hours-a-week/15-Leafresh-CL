@@ -33,20 +33,21 @@ locals {
   }
   first_subnet_id = element(values(local.unique_subnet_by_az), 0)
 }
-resource "aws_ec2_client_vpn_route" "this" {
-  for_each = local.unique_subnet_by_az
 
-  client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.this.id
-  destination_cidr_block = var.vpc_cidr_block
-  target_vpc_subnet_id   = each.value           # ← 실제 ID# target_vpc_subnet_id    = local.first_subnet_id
-  depends_on = [
-    aws_ec2_client_vpn_network_association.this
-  ]
+# resource "aws_ec2_client_vpn_route" "this" {
+#   # for_each = local.unique_subnet_by_az
 
-  lifecycle {
-    create_before_destroy = true
-  }
-}
+#   client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.this.id
+#   destination_cidr_block = var.vpc_cidr_block
+#   target_vpc_subnet_id   = local.first_subnet_id # each.value           # ← 실제 ID# target_vpc_subnet_id    = local.first_subnet_id
+#   depends_on = [
+#     aws_ec2_client_vpn_network_association.this
+#   ]
+
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+# }
 
 # 모든 그룹에 인가 규칙 허용
 resource "aws_ec2_client_vpn_authorization_rule" "this" {
@@ -54,4 +55,19 @@ resource "aws_ec2_client_vpn_authorization_rule" "this" {
   target_network_cidr    = var.vpc_cidr_block
   authorize_all_groups   = true
   description            = "Allow all VPC access"
+}
+
+resource "null_resource" "ensure_vpn_route" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws ec2 create-client-vpn-route \
+        --client-vpn-endpoint-id ${aws_ec2_client_vpn_endpoint.this.id} \
+        --destination-cidr-block ${var.vpc_cidr_block} \
+        --target-vpc-subnet-id ${local.first_subnet_id} \
+        || echo "Route exists or other error—skipping"
+    EOT
+
+    # 이 옵션이 있으면 프로비저너 실패 시에도 계속 진행
+    on_failure = continue
+  }
 }

@@ -65,7 +65,7 @@ output "sqs_dlq_urls" {
 ///////////////////////////////////////////////////////////////////////////////
 // ECR 모듈
 ///////////////////////////////////////////////////////////////////////////////
-output "ecr_repository_urls" {
+output "ecr_urls" {
   description = "Map of ECR repository URLs"
   value       = module.ecr.repository_urls
 }
@@ -164,4 +164,12 @@ output "vpn_endpoint_id" {
 output "vpn_endpoint_dns" {
   description = "Endpoint DNS of Client VPN"
   value       = module.vpn.endpoint_dns_name
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// ACM Request 모듈
+///////////////////////////////////////////////////////////////////////////////
+output "certificate_arn" {
+  value = module.acm_leafresh_req.certificate_arn
 }
