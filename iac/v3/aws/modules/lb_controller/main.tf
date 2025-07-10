@@ -42,27 +42,27 @@ resource "helm_release" "aws_lb_controller" {
 
   set = [
     {
-    name  = "clusterName"
-    value = var.project_name
+      name  = "clusterName"
+      value = var.project_name
     },
     {
-    name  = "region"
-    value = var.region
+      name  = "region"
+      value = var.region
     },
     {
-    name  = "vpcId"
-    value = var.vpc_id
+      name  = "vpcId"
+      value = var.vpc_id
     },
     {
-    name  = "serviceAccount.create"
-    value = "false"
+      name  = "serviceAccount.create"
+      value = "false"
     },
     {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
+      name  = "serviceAccount.name"
+      value = "aws-load-balancer-controller"
     }
   ]
-  
+
   # depends_on = [
   #   aws_iam_openid_connect_provider.oidc,
   #   aws_iam_role.lb_controller,

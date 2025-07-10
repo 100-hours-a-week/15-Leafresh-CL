@@ -3,7 +3,7 @@ resource "kubernetes_service" "this" {
     name      = var.name
     namespace = var.namespace
     annotations = {
-      "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
+      "service.beta.kubernetes.io/aws-load-balancer-type"     = "nlb"
       "service.beta.kubernetes.io/aws-load-balancer-internal" = "true"
     }
   }

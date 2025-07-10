@@ -11,11 +11,11 @@ module "nginx_ingress" {
   source = "./modules/nginx_ingress"
 
   # (필요시 값 오버라이드)
-  name                     = "nginx-ingress"
-  namespace                = "ingress-nginx"
-  service_type             = "LoadBalancer"
-  load_balancer_type       = "nlb"
-  publish_service_enabled  = true
+  name                    = "nginx-ingress"
+  namespace               = "ingress-nginx"
+  service_type            = "LoadBalancer"
+  load_balancer_type      = "nlb"
+  publish_service_enabled = true
 }
 
 
@@ -73,22 +73,26 @@ module "rds" {
 
 
 module "ec2_master" {
-  source       = "./modules/ec2"
-  project_name = var.project_name
-  vpc_id       = module.vpc.vpc_id
-  region       = var.region
-  ec2_nodes    = local.ec2_master_node
-  create_s3_uploader_iam   = true
+  source                 = "./modules/ec2"
+  project_name           = var.project_name
+  vpc_id                 = module.vpc.vpc_id
+  region                 = var.region
+  ec2_nodes              = local.ec2_master_node
+  create_s3_uploader_iam = true
+  access_key_id          = var.ec2_access_key_id
+  secret_access_key      = var.ec2_secret_access_key
 }
 
 module "ec2_worker" {
-  source       = "./modules/ec2"
-  project_name = var.project_name
-  vpc_id       = module.vpc.vpc_id
-  region       = var.region
-  ec2_nodes    = local.ec2_worker_nodes
-  create_s3_uploader_iam   = false
-  depends_on = [module.ec2_master]
+  source                 = "./modules/ec2"
+  project_name           = var.project_name
+  vpc_id                 = module.vpc.vpc_id
+  region                 = var.region
+  ec2_nodes              = local.ec2_worker_nodes
+  create_s3_uploader_iam = false
+  access_key_id          = var.ec2_access_key_id
+  secret_access_key      = var.ec2_secret_access_key
+  depends_on             = [module.ec2_master]
 }
 
 # module "alb" {
@@ -137,14 +141,14 @@ module "ecr" {
 
 
 module "vpn" {
-  source = "./modules/vpn"
-  subnet_ids = local.subnet_map
+  source                      = "./modules/vpn"
+  subnet_ids                  = local.subnet_map
   project_name                = var.project_name
   vpc_cidr_block              = var.vpc_cidr_block
   server_certificate_arn      = module.acm_vpn_server_req.certificate_arn
   client_root_certificate_arn = module.acm_vpn_client_req.certificate_arn
   client_cidr_block           = var.vpn_client_cidr_block
-  depends_on              = [
+  depends_on = [
     module.acm_server_val.validation_complete,
     module.acm_client_val.validation_complete
   ]

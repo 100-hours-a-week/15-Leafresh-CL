@@ -14,12 +14,6 @@ variable "k8s_service_namespace" {
   default     = "service"
 }
 
-variable "ingress_host" {
-  description = "Name of Service Namespace of k8s"
-  type        = string
-  default     = ""
-}
-
 variable "helm_name" {
   description = "Helm release name"
   type        = string
@@ -29,6 +23,7 @@ variable "helm_name" {
 variable "helm_repository" {
   description = "Helm chart repo URL"
   type        = string
+  sensitive = true
   default     = "https://kubernetes.github.io/ingress-nginx"
 }
 
@@ -114,7 +109,7 @@ variable "tag_environment" {
 variable "vpc_cidr_block" {
   description = "The CIDR block for the VPC (e.g., 10.0.0.0/18)."
   type        = string
-  default     = "10.0.0.0/16"
+  sensitive = true
 }
 
 
@@ -124,21 +119,13 @@ variable "vpc_cidr_block" {
 variable "public_subnet_cidrs" {
   description = "Map of AZ suffixes to public subnet CIDRs"
   type        = map(string)
-  default = {
-    a = "10.0.1.0/24"
-    c = "10.0.101.0/24"
-  }
+  sensitive = true
 }
 
 variable "private_subnet_cidrs" {
   description = "Map of AZ-suffix-index to private subnet CIDRs (e.g. a-1)"
   type        = map(string)
-  default = {
-    "a-1" = "10.0.2.0/24"
-    "a-2" = "10.0.3.0/24"
-    "c-1" = "10.0.102.0/24"
-    "c-2" = "10.0.103.0/24"
-  }
+  sensitive = true
 }
 
 
@@ -164,7 +151,6 @@ variable "rds_username" {
 variable "rds_password" {
   description = "Master password for the RDS instance"
   type        = string
-  default     = "Rlatldms!2!3"
   sensitive   = true
 }
 
@@ -224,42 +210,55 @@ variable "sqs_fifo_max_receive_count" {
 
 # EC2 variables & locals
 # =====================================================================
+variable "ec2_access_key_id" {
+  description = "EC2 credentials ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "ec2_secret_access_key" {
+  description = "EC2 credentials key"
+  type        = string
+  sensitive   = true
+}
+
+
 locals {
   ec2_master_node = [
     {
       name          = "master"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
   ]
-  
+
   ec2_worker_nodes = [
     {
       name          = "fe"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
       name          = "be"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
       name          = "argocd"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
       name          = "ai-cpu"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.xlarge"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "gpu"
@@ -273,21 +272,21 @@ locals {
     },
     {
       name          = "redis-master"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["a-2"]
       role          = "k8s"
     },
     {
       name          = "redis-slave"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["c-2"]
       role          = "k8s"
     },
     {
       name          = "monitoring"
-      ami           = "ami-0662f4965dfc70aca"
+      ami           = "ami-08943a151bd468f4e"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["c-1"]
       role          = "k8s"
@@ -322,12 +321,14 @@ variable "ecr_repository_names" {
 variable "gcp_dns_zone_name" {
   description = "Managed Zone of GCP DNS"
   type        = string
+  sensitive = true
   default     = "dev-leafresh-app"
 }
 
 variable "gcp_dns_domain_name" {
   description = "Domain name of GCP DNS"
   type        = string
+  sensitive = true
   default     = "dev-leafresh.app"
 }
 
@@ -337,13 +338,13 @@ variable "gcp_dns_domain_name" {
 variable "vpn_server_domain" {
   description = "Server Domain of VPN"
   type        = string
-  default     = "vpn.dev-leafresh.app"
+  sensitive = true
 }
 
 variable "vpn_client_domain" {
   description = "Client Domain of VPN"
   type        = string
-  default     = "client.dev-leafresh.app"
+  sensitive = true
 }
 
 
@@ -360,21 +361,5 @@ locals {
 variable "vpn_client_cidr_block" {
   description = "CIDR block assigned to VPN"
   type        = string
-  default     = "10.100.0.0/22"
-}
-
-
-
-# LB Controller variables
-# =====================================================================
-variable "cluster_oidc_url" {
-  description = "CIDR block assigned to VPN"
-  type        = string
-  default     = ""
-}
-
-variable "cluster_oidc_thumbprint" {
-  description = "CIDR block assigned to VPN"
-  type        = string
-  default     = ""
+  sensitive = true
 }

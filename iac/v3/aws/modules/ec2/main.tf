@@ -2,7 +2,7 @@
 # Security Groups
 # ────────────────────────────────────────────────────────────────────────────────
 resource "aws_security_group" "k8s" {
-  name_prefix        = "${var.project_name}-sg-k8s-"
+  name_prefix = "${var.project_name}-sg-k8s-"
   description = "Kubernetes components SG"
   vpc_id      = var.vpc_id
 
@@ -109,7 +109,7 @@ resource "aws_security_group" "k8s" {
 }
 
 resource "aws_security_group" "gpu" {
-  name_prefix        = "${var.project_name}-sg-gpu-"
+  name_prefix = "${var.project_name}-sg-gpu-"
   description = "Instance using GPU"
   vpc_id      = var.vpc_id
   # SSH
@@ -184,8 +184,8 @@ resource "aws_key_pair" "ec2" {
 resource "local_file" "private_key" {
   for_each = tls_private_key.ec2
 
-  content  = each.value.private_key_pem
-  filename = "${path.module}/keys/${each.key}.pem"
+  content         = each.value.private_key_pem
+  filename        = "${path.module}/keys/${each.key}.pem"
   file_permission = "0400"
 }
 
@@ -268,15 +268,15 @@ data "aws_iam_policy_document" "ec2_assume_role" {
 
 resource "aws_iam_role" "s3_uploader" {
   name               = "${var.project_name}-s3-uploader"
-  count             = var.create_s3_uploader_iam ? 1 : 0
+  count              = var.create_s3_uploader_iam ? 1 : 0
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
 }
 
 resource "aws_iam_policy" "s3_write" {
-  name   = "${var.project_name}-s3-write"
-  count             = var.create_s3_uploader_iam ? 1 : 0
+  name  = "${var.project_name}-s3-write"
+  count = var.create_s3_uploader_iam ? 1 : 0
   policy = jsonencode({
-    Version   = "2012-10-17",
+    Version = "2012-10-17",
     Statement = [{
       Effect   = "Allow",
       Action   = ["s3:PutObject", "s3:PutObjectAcl"],
@@ -286,15 +286,15 @@ resource "aws_iam_policy" "s3_write" {
 }
 
 resource "aws_iam_role_policy_attachment" "attach_s3_write" {
-  count             = var.create_s3_uploader_iam ? 1 : 0
+  count      = var.create_s3_uploader_iam ? 1 : 0
   role       = aws_iam_role.s3_uploader[0].name
   policy_arn = aws_iam_policy.s3_write[0].arn
 }
 
 resource "aws_iam_instance_profile" "s3_uploader" {
-  name = "${var.project_name}-s3-uploader-profile"
-  count             = var.create_s3_uploader_iam ? 1 : 0
-  role = aws_iam_role.s3_uploader[0].name
+  name  = "${var.project_name}-s3-uploader-profile"
+  count = var.create_s3_uploader_iam ? 1 : 0
+  role  = aws_iam_role.s3_uploader[0].name
 }
 
 
@@ -304,8 +304,8 @@ resource "aws_launch_template" "this" {
   name_prefix   = "${var.project_name}-${each.key}-lt"
   image_id      = each.value.ami
   instance_type = each.value.instance_type
-  
-  
+
+
   # iam_instance_profile {
   #   name = aws_iam_instance_profile.s3_uploader[0].name
   # }
@@ -324,9 +324,11 @@ resource "aws_launch_template" "this" {
 
   user_data = base64encode(
     templatefile("${path.module}/templates/base.sh.tpl", {
-      node_name    = each.key
-      project_name = var.project_name
-      region       = var.region
+      node_name         = each.key
+      project_name      = var.project_name
+      region            = var.region
+      access_key_id     = var.access_key_id
+      secret_access_key = var.secret_access_key
     })
   )
 
@@ -343,10 +345,10 @@ resource "aws_launch_template" "this" {
 resource "aws_autoscaling_group" "this" {
   for_each = aws_launch_template.this
 
-  name_prefix         = "${var.project_name}-${each.key}-asg"
-  min_size            = 1
-  max_size            = 1
-  desired_capacity    = 1
+  name_prefix      = "${var.project_name}-${each.key}-asg"
+  min_size         = 1
+  max_size         = 1
+  desired_capacity = 1
 
   # Use the subnet from the launch template
   vpc_zone_identifier = [

@@ -3,17 +3,20 @@ set -eux
 
 # ----- 공통 설치 -----
 apt-get update
-apt-get install -y docker.io apt-transport-https curl awscli jq
+apt-get install -y docker.io apt-transport-https curl jq ca-certificates gnupg awscli
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+export AWS_ACCESS_KEY_ID=${access_key_id}
+export AWS_SECRET_ACCESS_KEY=${secret_access_key}
+export AWS_DEFAULT_REGION=${region}
+
+
 # Kubernetes 설치
-curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-  | apt-key add -
-cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb https://apt.kubernetes.io/ kubernetes-xenial main
-EOF
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 apt-get update
 apt-get install -y kubelet kubeadm kubectl
+modprobe br_netfilter
 sysctl net.bridge.bridge-nf-call-iptables=1
 
 case "${node_name}" in
@@ -82,32 +85,29 @@ case "${node_name}" in
     chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 
-    # # 2) Helm 설치
-    # curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+    # 3) Prometheus/Grafana 모니터링 스택
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo update
+    helm install monitoring \
+      prometheus-community/kube-prometheus-stack \
+      --create-namespace --namespace monitoring
 
-    # # 3) Prometheus/Grafana 모니터링 스택
-    # helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    # helm repo update
-    # helm install monitoring \
-    #   prometheus-community/kube-prometheus-stack \
-    #   --create-namespace --namespace monitoring
+    # 4) Loki (로그 수집) 서버 및 Agent
+    helm install loki \
+      grafana/loki-stack \
+      --namespace monitoring \
+      --set promtail.enabled=true \
+      --set promtail.serviceMonitor.enabled=true
 
-    # # 4) Loki (로그 수집) 서버 및 Agent
-    # helm install loki \
-    #   grafana/loki-stack \
-    #   --namespace monitoring \
-    #   --set promtail.enabled=true \
-    #   --set promtail.serviceMonitor.enabled=true
-
-    # # 5) Jaeger (트레이스 수집) all-in-one 배포
-    # helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
-    # helm repo update
-    # helm install jaeger \
-    #   jaegertracing/jaeger \
-    #   --namespace monitoring \
-    #   --set provisionDataStore.cassandra=false \
-    #   --set provisionDataStore.elasticsearch=false \
-    #   --set collector.agent.enabled=true
+    # 5) Jaeger (트레이스 수집) all-in-one 배포
+    helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+    helm repo update
+    helm install jaeger \
+      jaegertracing/jaeger \
+      --namespace monitoring \
+      --set provisionDataStore.cassandra=false \
+      --set provisionDataStore.elasticsearch=false \
+      --set collector.agent.enabled=true
     ;;
 
   "argocd")
@@ -138,21 +138,16 @@ case "${node_name}" in
     chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 
-    # # 2) Redis 설치
-    # kubectl create namespace redis || true
+    # 2) Redis 설치
+    kubectl create namespace redis || true
 
-    # # Helm 설치 안되어 있으면 설치
-    # if ! command -v helm &> /dev/null; then
-    #   curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    # fi
+    # Redis 설치 (Bitnami Chart)
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update
 
-    # # Redis 설치 (Bitnami Chart)
-    # helm repo add bitnami https://charts.bitnami.com/bitnami
-    # helm repo update
-
-    # helm install my-redis bitnami/redis \
-    #   --namespace redis \
-    #   --set auth.enabled=false
+    helm install my-redis bitnami/redis \
+      --namespace redis \
+      --set auth.enabled=false
     ;;
 
 esac

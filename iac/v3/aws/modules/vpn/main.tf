@@ -22,7 +22,7 @@ resource "aws_ec2_client_vpn_network_association" "this" {
 
 # VPC 전체 라우트
 data "aws_subnet" "selected" {
-  for_each = var.subnet_ids   # 중복 ID 자동 제거
+  for_each = var.subnet_ids # 중복 ID 자동 제거
   id       = each.value
 }
 
