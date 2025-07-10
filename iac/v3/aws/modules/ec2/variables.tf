@@ -1,6 +1,7 @@
 variable "project_name" { type = string }
 variable "vpc_id" { type = string }
 variable "region" { type = string }
+variable "create_s3_uploader_iam" { type = bool }
 variable "ec2_nodes" {
   type = list(object({
     name          = string

@@ -30,8 +30,8 @@ case "${node_name}" in
 
     # 3) join 스크립트 + admin.conf → S3 업로드
     su - ubuntu -c "kubeadm token create --print-join-command > /home/ubuntu/join.sh"
-    aws s3 cp /home/ubuntu/join.sh     s3://${project_name}-scripts/join.sh
-    aws s3 cp /etc/kubernetes/admin.conf s3://${project_name}-scripts/admin.conf
+    aws s3 cp /home/ubuntu/join.sh     s3://${project_name}-logs/join.sh
+    aws s3 cp /etc/kubernetes/admin.conf s3://${project_name}-logs/admin.conf
 
     # 4) Terraform 실행
     cd /home/ubuntu/terraform
@@ -41,12 +41,12 @@ case "${node_name}" in
 
   "fe"|"be"|"ai-cpu")
     # 1) join 대기 & 실행
-    until aws s3 cp s3://${project_name}-scripts/join.sh /home/ubuntu/join.sh; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/join.sh /home/ubuntu/join.sh; do sleep 5; done
     bash /home/ubuntu/join.sh
 
     # 2) kubeconfig 다운로드 & 권한 설정
     mkdir -p /home/ubuntu/.kube
-    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
     chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 
@@ -73,12 +73,12 @@ case "${node_name}" in
 
   "monitoring")
     # 1) 클러스터 조인
-    until aws s3 cp s3://${project_name}-scripts/join.sh /home/ubuntu/join.sh; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/join.sh /home/ubuntu/join.sh; do sleep 5; done
     bash /home/ubuntu/join.sh
 
     # 2) kubeconfig 다운로드
     mkdir -p /home/ubuntu/.kube
-    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
     chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 
@@ -112,12 +112,12 @@ case "${node_name}" in
 
   "argocd")
     # 1) 클러스터 조인
-    until aws s3 cp s3://${project_name}-scripts/join.sh /home/ubuntu/join.sh; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/join.sh /home/ubuntu/join.sh; do sleep 5; done
     bash /home/ubuntu/join.sh
 
     # 2) kubeconfig 다운로드
     mkdir -p /home/ubuntu/.kube
-    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
     chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 
@@ -129,12 +129,12 @@ case "${node_name}" in
 
   "redis-master"|"redis-slave")
     # 1) 클러스터 조인
-    until aws s3 cp s3://${project_name}-scripts/join.sh /home/ubuntu/join.sh; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/join.sh /home/ubuntu/join.sh; do sleep 5; done
     bash /home/ubuntu/join.sh
 
     # 2) kubeconfig 다운로드
     mkdir -p /home/ubuntu/.kube
-    until aws s3 cp s3://${project_name}-scripts/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
+    until aws s3 cp s3://${project_name}-logs/admin.conf /home/ubuntu/.kube/config; do sleep 5; done
     chown -R ubuntu:ubuntu /home/ubuntu/.kube
     export KUBECONFIG=/home/ubuntu/.kube/config
 

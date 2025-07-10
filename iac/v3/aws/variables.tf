@@ -1,6 +1,6 @@
 # variables.tf
 
-# k8s variables
+# k8s + helm variables
 # =====================================================================
 variable "kubeconfig_path" {
   description = "Config file of k8s"
@@ -14,7 +14,59 @@ variable "k8s_service_namespace" {
   default     = "service"
 }
 
+variable "ingress_host" {
+  description = "Name of Service Namespace of k8s"
+  type        = string
+  default     = ""
+}
 
+variable "helm_name" {
+  description = "Helm release name"
+  type        = string
+  default     = "nginx-ingress"
+}
+
+variable "helm_repository" {
+  description = "Helm chart repo URL"
+  type        = string
+  default     = "https://kubernetes.github.io/ingress-nginx"
+}
+
+variable "helm_chart" {
+  description = "Helm chart name"
+  type        = string
+  default     = "ingress-nginx"
+}
+
+variable "helm_namespace" {
+  description = "Kubernetes namespace for the release"
+  type        = string
+  default     = "ingress-nginx"
+}
+
+variable "helm_create_namespace" {
+  description = "Whether to create the namespace"
+  type        = bool
+  default     = true
+}
+
+variable "helm_service_type" {
+  description = "Kubernetes Service type (LoadBalancer, ClusterIP 등)"
+  type        = string
+  default     = "LoadBalancer"
+}
+
+variable "helm_lb_type" {
+  description = "AWS LoadBalancer 타입 (nlb 또는 alb)"
+  type        = string
+  default     = "nlb"
+}
+
+variable "helm_publish_service_enabled" {
+  description = "controller.publishService.enabled 설정"
+  type        = bool
+  default     = true
+}
 
 # =====================================================================================================
 
