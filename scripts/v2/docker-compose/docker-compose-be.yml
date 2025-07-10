@@ -1,7 +1,7 @@
 services:
   app:
     image: jchanho99/backend-develop:latest
-    container_name: springboot-backend
+    container_name: backend
     restart: always
     network_mode: "host"
     ports:
