@@ -175,22 +175,15 @@ variable "sqs_fifo_max_receive_count" {
 locals {
   ec2_master_node = [
     {
-      name          = "monitoring"
-      ami           = "ami-0662f4965dfc70aca"
-      instance_type = "t3.small"
-      subnet_id     = module.subnets.private_subnet_ids_map["c-1"]
-      role          = "k8s"
-    },
-  ]
-  
-  ec2_worker_nodes = [
-    {
       name          = "master"
       ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
+  ]
+  
+  ec2_worker_nodes = [
     {
       name          = "fe"
       ami           = "ami-0662f4965dfc70aca"
@@ -238,6 +231,13 @@ locals {
       ami           = "ami-0662f4965dfc70aca"
       instance_type = "t3.small"
       subnet_id     = module.subnets.private_subnet_ids_map["c-2"]
+      role          = "k8s"
+    },
+    {
+      name          = "monitoring"
+      ami           = "ami-0662f4965dfc70aca"
+      instance_type = "t3.small"
+      subnet_id     = module.subnets.private_subnet_ids_map["c-1"]
       role          = "k8s"
     },
   ]
