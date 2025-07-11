@@ -1,25 +1,3 @@
-# Client VPN Endpoint
-resource "aws_ec2_client_vpn_endpoint" "this" {
-  description            = "${var.project_name}-client-vpn"
-  server_certificate_arn = var.server_certificate_arn
-  client_cidr_block      = var.client_cidr_block
-  authentication_options {
-    type                       = "certificate-authentication"
-    root_certificate_chain_arn = var.client_root_certificate_arn
-  }
-  connection_log_options { enabled = false }
-  transport_protocol = "udp"
-  vpn_port           = 443
-  split_tunnel       = false
-}
-
-# 서브넷과 연결
-resource "aws_ec2_client_vpn_network_association" "this" {
-  for_each               = var.subnet_ids
-  client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.this.id
-  subnet_id              = each.value
-}
-
 # VPC 전체 라우트
 data "aws_subnet" "selected" {
   for_each = var.subnet_ids # 중복 ID 자동 제거
@@ -34,20 +12,57 @@ locals {
   first_subnet_id = element(values(local.unique_subnet_by_az), 0)
 }
 
-# resource "aws_ec2_client_vpn_route" "this" {
-#   # for_each = local.unique_subnet_by_az
+# ACM Certificate for Client  
+# openssl genrsa -out client.key 2048
+# openssl req -new -key client.key -out client.csr  
+# openssl req -new -key client.key -out client.csr -subj "/CN=client.dev-leafresh.app"
+# openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 365
 
-#   client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.this.id
-#   destination_cidr_block = var.vpc_cidr_block
-#   target_vpc_subnet_id   = local.first_subnet_id # each.value           # ← 실제 ID# target_vpc_subnet_id    = local.first_subnet_id
-#   depends_on = [
-#     aws_ec2_client_vpn_network_association.this
-#   ]
+# ACM Certificate for Server
+# Generate server key and cert:
+# openssl genrsa -out server.key 2048
+# openssl req -new -key server.key -out server.csr -subj "/CN=vpn.dev-leafresh.app"
+# openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365
 
-#   lifecycle {
-#     create_before_destroy = true
-#   }
-# }
+
+resource "aws_acm_certificate" "server" {
+  private_key       = file("${path.module}/certs/server.key")
+  certificate_body  = file("${path.module}/certs/server.crt")
+  certificate_chain = file("${path.module}/certs/ca.crt")
+}
+
+resource "aws_acm_certificate" "client" {
+  private_key       = file("${path.module}/certs/client.key") 
+  certificate_body  = file("${path.module}/certs/client.crt")
+  certificate_chain = file("${path.module}/certs/ca.crt")
+}
+
+# Client VPN Endpoint
+resource "aws_ec2_client_vpn_endpoint" "this" {
+  description            = "${var.project_name}-client-vpn"
+  server_certificate_arn = aws_acm_certificate.server.arn
+  client_cidr_block     = var.client_cidr_block
+
+  authentication_options {
+    type                       = "certificate-authentication"
+    root_certificate_chain_arn = aws_acm_certificate.client.arn
+  }
+
+  connection_log_options {
+    enabled = false
+  }
+
+  transport_protocol = "udp"
+  vpn_port          = 443
+  split_tunnel      = false
+}
+
+# 서브넷과 연결
+resource "aws_ec2_client_vpn_network_association" "this" {
+  for_each               = var.subnet_ids
+  client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.this.id
+  subnet_id              = each.value
+}
 
 # 모든 그룹에 인가 규칙 허용
 resource "aws_ec2_client_vpn_authorization_rule" "this" {
@@ -67,7 +82,7 @@ resource "null_resource" "ensure_vpn_route" {
         || echo "Route exists or other error—skipping"
     EOT
 
-    # 이 옵션이 있으면 프로비저너 실패 시에도 계속 진행
     on_failure = continue
   }
 }
+

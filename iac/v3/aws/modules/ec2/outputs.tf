@@ -143,3 +143,7 @@ output "private_ips" {
   description = "각 노드별 Private IP map"
   value       = { for name, inst in data.aws_instance.first_node : name => inst.private_ip }
 }
+
+output "iam_profile_name" {
+  value = var.attach_iam ? aws_iam_instance_profile.this[0].name : ""
+}

@@ -255,48 +255,58 @@ locals {
   }
 }
 
-data "aws_iam_policy_document" "ec2_assume_role" {
-  statement {
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-    actions = ["sts:AssumeRole"]
-  }
-}
+# resource "aws_iam_instance_profile" "this" {
+#   name = "leafresh-iam-role-eks"
+#   role = "leafresh-iam-role-eks"
+# }
 
-resource "aws_iam_role" "s3_uploader" {
-  name               = "${var.project_name}-s3-uploader"
-  count              = var.create_s3_uploader_iam ? 1 : 0
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
-}
+# data "aws_iam_policy_document" "ec2_assume_role" {
+#   statement {
+#     effect = "Allow"
+#     principals {
+#       type        = "Service"
+#       identifiers = ["ec2.amazonaws.com"]
+#     }
+#     actions = ["sts:AssumeRole"]
+#   }
+# }
 
-resource "aws_iam_policy" "s3_write" {
-  name  = "${var.project_name}-s3-write"
-  count = var.create_s3_uploader_iam ? 1 : 0
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect   = "Allow",
-      Action   = ["s3:PutObject", "s3:PutObjectAcl"],
-      Resource = "arn:aws:s3:::${var.project_name}-logs/*"
-    }]
-  })
-}
+# resource "aws_iam_role" "s3_uploader" {
+#   name               = "${var.project_name}-s3-uploader"
+#   count              = var.create_s3_uploader_iam ? 1 : 0
+#   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+# }
 
-resource "aws_iam_role_policy_attachment" "attach_s3_write" {
-  count      = var.create_s3_uploader_iam ? 1 : 0
-  role       = aws_iam_role.s3_uploader[0].name
-  policy_arn = aws_iam_policy.s3_write[0].arn
-}
+# resource "aws_iam_policy" "s3_write" {
+#   name  = "${var.project_name}-s3-write"
+#   count = var.create_s3_uploader_iam ? 1 : 0
+#   policy = jsonencode({
+#     Version = "2012-10-17",
+#     Statement = [{
+#       Effect   = "Allow",
+#       Action   = ["s3:PutObject", "s3:PutObjectAcl"],
+#       Resource = "arn:aws:s3:::${var.project_name}-logs/*"
+#     }]
+#   })
+# }
 
-resource "aws_iam_instance_profile" "s3_uploader" {
-  name  = "${var.project_name}-s3-uploader-profile"
-  count = var.create_s3_uploader_iam ? 1 : 0
-  role  = aws_iam_role.s3_uploader[0].name
-}
+# resource "aws_iam_role_policy_attachment" "attach_s3_write" {
+#   count      = var.create_s3_uploader_iam ? 1 : 0
+#   role       = aws_iam_role.s3_uploader[0].name
+#   policy_arn = aws_iam_policy.s3_write[0].arn
+# }
 
+# resource "aws_iam_instance_profile" "s3_uploader" {
+#   name  = "${var.project_name}-s3-uploader-profile"
+#   count = var.create_s3_uploader_iam ? 1 : 0
+#   role  = aws_iam_role.s3_uploader[0].name
+# }
+
+resource "aws_iam_instance_profile" "this" {
+  count = var.attach_iam ? 1 : 0
+  name  = "leafresh-iam-role-eks"
+  role  = "leafresh-iam-role-eks"
+}
 
 # Launch Template
 resource "aws_launch_template" "this" {
@@ -307,15 +317,16 @@ resource "aws_launch_template" "this" {
 
 
   # iam_instance_profile {
-  #   name = aws_iam_instance_profile.s3_uploader[0].name
+  #   name = aws_iam_instance_profile.this.name
   # }
 
-  dynamic "iam_instance_profile" {
-    for_each = var.create_s3_uploader_iam ? [aws_iam_instance_profile.s3_uploader[0]] : []
-    content {
-      name = iam_instance_profile.value.name
-    }
-  }
+  # dynamic "iam_instance_profile" {
+  #   for_each = var.attach_iam && length(var.iam_profile_name) > 0 ? [var.iam_profile_name]  : []
+
+  #   content {
+  #     name = iam_instance_profile.each.value
+  #   }
+  # }
 
   network_interfaces {
     subnet_id                   = each.value.subnet_id

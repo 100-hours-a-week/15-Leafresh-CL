@@ -119,13 +119,21 @@ variable "vpc_cidr_block" {
 variable "public_subnet_cidrs" {
   description = "Map of AZ suffixes to public subnet CIDRs"
   type        = map(string)
-  sensitive = true
+  default = {
+  a = "10.0.1.0/24"
+  c = "10.0.101.0/24"
+  }
 }
 
 variable "private_subnet_cidrs" {
   description = "Map of AZ-suffix-index to private subnet CIDRs (e.g. a-1)"
   type        = map(string)
-  sensitive = true
+  default = {
+  "a-1" = "10.0.2.0/24"
+  "a-2" = "10.0.3.0/24"
+  "c-1" = "10.0.102.0/24"
+  "c-2" = "10.0.103.0/24"
+  }
 }
 
 
@@ -227,8 +235,8 @@ locals {
   ec2_master_node = [
     {
       name          = "master"
-      ami           = "ami-08943a151bd468f4e"
-      instance_type = "t3.small"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
+      instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
@@ -237,28 +245,28 @@ locals {
   ec2_worker_nodes = [
     {
       name          = "fe"
-      ami           = "ami-08943a151bd468f4e"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
       name          = "be"
-      ami           = "ami-08943a151bd468f4e"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
       instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
       name          = "argocd"
-      ami           = "ami-08943a151bd468f4e"
-      instance_type = "t3.small"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
+      instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "k8s"
     },
     {
       name          = "ai-cpu"
-      ami           = "ami-08943a151bd468f4e"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
       instance_type = "t3.xlarge"
       subnet_id     = module.subnets.private_subnet_ids_map["a-1"]
       role          = "gpu"
@@ -272,22 +280,22 @@ locals {
     },
     {
       name          = "redis-master"
-      ami           = "ami-08943a151bd468f4e"
-      instance_type = "t3.small"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
+      instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["a-2"]
       role          = "k8s"
     },
     {
       name          = "redis-slave"
-      ami           = "ami-08943a151bd468f4e"
-      instance_type = "t3.small"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
+      instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["c-2"]
       role          = "k8s"
     },
     {
       name          = "monitoring"
-      ami           = "ami-08943a151bd468f4e"
-      instance_type = "t3.small"
+      ami           = "ami-03e38f46f79020a70" # "ami-08943a151bd468f4e"
+      instance_type = "t3.medium"
       subnet_id     = module.subnets.private_subnet_ids_map["c-1"]
       role          = "k8s"
     },
