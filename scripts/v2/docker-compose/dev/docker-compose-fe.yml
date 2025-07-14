@@ -1,7 +1,7 @@
 services:
   app:
     image: jchanho99/frontend-develop:latest
-    container_name: nextjs-frontend
+    container_name: frontend
     restart: always
     ports:
       - "3000:3000"
