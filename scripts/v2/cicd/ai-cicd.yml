@@ -7,7 +7,6 @@ on:
     tags:
       - 'v*-kellyn-dev'
       - 'v*-mac-dev'
-      # - 'v*-prod'
   workflow_dispatch:
     inputs:
       target_test:
@@ -17,7 +16,6 @@ on:
         options:
           - kellyn-dev
           - mac-dev
-          # - api-prod
 
 
 jobs:
@@ -202,7 +200,7 @@ jobs:
         if: failure() && steps.deploy-model.outcome == 'failure'
         run: echo "status=failure" >> "$GITHUB_OUTPUT"
 
-`deploy-prod:
+  deploy-prod:
     name: Deploy - Dev
     if: startsWith(github.ref, 'refs/tags/v') && (contains(github.ref, 'kellyn') || contains(github.ref, 'mac'))
     runs-on: ubuntu-latest

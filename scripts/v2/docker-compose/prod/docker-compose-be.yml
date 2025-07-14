@@ -1,0 +1,13 @@
+services:
+  app:
+    image: jchanho99/backend-develop:latest
+    container_name: backend
+    restart: always
+    network_mode: "host"
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./app/leafresh-gcs.json:/app/leafresh-dev2.json:ro
+

@@ -1,0 +1,11 @@
+services:
+  app:
+    image: jchanho99/frontend-develop:latest
+    container_name: frontend
+    restart: always
+    network_mode: "host"
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./app/.env
+      - ./app/.env.production
