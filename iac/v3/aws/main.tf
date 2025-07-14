@@ -104,19 +104,19 @@ module "ecr" {
 }
 
 
-module "vpn" {
-  source                      = "./modules/vpn"
-  subnet_ids                  = local.subnet_map
-  project_name                = var.project_name
-  vpc_cidr_block              = var.vpc_cidr_block
-  # server_certificate_arn      = module.acm_vpn_server_req.certificate_arn
-  # client_root_certificate_arn = module.acm_vpn_client_req.certificate_arn
-  client_cidr_block           = var.vpn_client_cidr_block
-  # depends_on = [
-  #   module.acm_server_val.validation_complete,
-  #   module.acm_client_val.validation_complete
-  # ]
-}
+# module "vpn" {
+#   source                      = "./modules/vpn"
+#   subnet_ids                  = local.subnet_map
+#   project_name                = var.project_name
+#   vpc_cidr_block              = var.vpc_cidr_block
+#   # server_certificate_arn      = module.acm_vpn_server_req.certificate_arn
+#   # client_root_certificate_arn = module.acm_vpn_client_req.certificate_arn
+#   client_cidr_block           = var.vpn_client_cidr_block
+#   # depends_on = [
+#   #   module.acm_server_val.validation_complete,
+#   #   module.acm_client_val.validation_complete
+#   # ]
+# }
 
 
 module "cloudfront" {
@@ -160,19 +160,19 @@ module "acm_ingress_req" {
 }
 
 
-module "gcp_dns_vpn_server" {
-  source                    = "./modules/dns"
-  project_id                = var.gcp_project_id
-  zone_name                 = var.gcp_dns_zone_name
-  domain_validation_options = module.vpn.server_domain_validation_options
-}
+# module "gcp_dns_vpn_server" {
+#   source                    = "./modules/dns"
+#   project_id                = var.gcp_project_id
+#   zone_name                 = var.gcp_dns_zone_name
+#   domain_validation_options = module.vpn.server_domain_validation_options
+# }
 
-module "gcp_dns_vpn_client" {
-  source                    = "./modules/dns"
-  project_id                = var.gcp_project_id
-  zone_name                 = var.gcp_dns_zone_name
-  domain_validation_options = module.vpn.client_domain_validation_options
-}
+# module "gcp_dns_vpn_client" {
+#   source                    = "./modules/dns"
+#   project_id                = var.gcp_project_id
+#   zone_name                 = var.gcp_dns_zone_name
+#   domain_validation_options = module.vpn.client_domain_validation_options
+# }
 
 module "gcp_dns_ingress" {
   source                    = "./modules/dns"
@@ -182,17 +182,17 @@ module "gcp_dns_ingress" {
 }
 
 
-module "acm_server_val" {
-  source                  = "./modules/acm/validate"
-  certificate_arn         = module.vpn.server_certificate_arn
-  validation_record_fqdns = module.gcp_dns_vpn_server.fqdns
-}
+# module "acm_server_val" {
+#   source                  = "./modules/acm/validate"
+#   certificate_arn         = module.vpn.server_certificate_arn
+#   validation_record_fqdns = module.gcp_dns_vpn_server.fqdns
+# }
 
-module "acm_client_val" {
-  source                  = "./modules/acm/validate"
-  certificate_arn         = module.vpn.client_certificate_arn
-  validation_record_fqdns = module.gcp_dns_vpn_client.fqdns
-}
+# module "acm_client_val" {
+#   source                  = "./modules/acm/validate"
+#   certificate_arn         = module.vpn.client_certificate_arn
+#   validation_record_fqdns = module.gcp_dns_vpn_client.fqdns
+# }
 
 module "acm_ingress_val" {
   source                  = "./modules/acm/validate"
