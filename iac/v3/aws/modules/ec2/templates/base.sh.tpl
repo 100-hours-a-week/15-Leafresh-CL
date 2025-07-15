@@ -100,9 +100,11 @@ case "${node_name}" in
     export KUBECONFIG=/home/ec2-user/.kube/config
 
     # 3) Prometheus/Grafana 스택 설치
+    helm repo add grafana https://grafana.github.io/helm-charts
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     helm repo update
     helm install monitoring prometheus-community/kube-prometheus-stack --create-namespace --namespace monitoring
+    helm install my-grafana grafana/grafana --namespace monitoring
 
     # 4) Loki 설치
     helm install loki grafana/loki-stack --namespace monitoring --set promtail.enabled=true --set promtail.serviceMonitor.enabled=true
