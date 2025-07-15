@@ -62,6 +62,60 @@ case "${node_name}" in
     terraform apply -auto-approve
     ;;
 
+    "fe")
+    # 1) join 대기 & 실행
+    until aws s3 cp s3://${project_name}-logs/join.sh /home/ec2-user/join.sh; do sleep 5; done
+    bash /home/ec2-user/join.sh
+
+    # 2) kubeconfig 설정
+    mkdir -p /home/ec2-user/.kube
+    until aws s3 cp s3://${project_name}-logs/admin.conf /home/ec2-user/.kube/config; do sleep 5; done
+    chown -R ec2-user:ec2-user /home/ec2-user/.kube
+    export KUBECONFIG=/home/ec2-user/.kube/config
+
+    # 3) ECR 로그인 (Docker & Helm)
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    aws ecr get-login-password --region ${region} \
+      | docker login --username AWS --password-stdin $$ACCOUNT_ID.dkr.ecr.${region}.amazonaws.com
+    aws ecr get-login-password --region ${region} \
+      | helm registry login --username AWS --password-stdin $$ACCOUNT_ID.dkr.ecr.${region}.amazonaws.com
+
+    # 4) AWS CCM (k8s용 AWS CLI 연동 패키지) 설치
+    helm repo add aws-cloud-controller-manager https://kubernetes.github.io/cloud-provider-aws
+    helm repo update
+    helm install aws-ccm aws-cloud-controller-manager/aws-cloud-controller-manager \
+      --namespace kube-system \
+      --set cloudProvider.name=aws \
+      --set region=ap-northeast-2 \
+      --set clusterName=leafresh-k8s \
+      --set serviceAccount.create=true \
+      --set args[0]=--cloud-provider=aws \
+      --set args[1]=--configure-cloud-routes=false
+
+    # 5) Nginx Ingress 설치
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo update
+    helm install ingress-nginx ingress-nginx/ingress-nginx \
+      --namespace ingress-nginx --create-namespace \
+      --set controller.service.type=LoadBalancer \
+      --set controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"="nlb" \
+      --set controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-internal"="false"
+
+
+
+
+
+
+
+
+    # 4) Helm 차트 설치 (주석 해제 후 사용)
+    # if [ "${node_name}" = "fe" ]; then
+    #   helm install frontend oci://$${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com/${project_name}-charts/frontend --version latest --create-namespace --namespace frontend
+    # else
+    #   helm install backend  oci://$${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com/${project_name}-charts/backend  --version latest --create-namespace --namespace backend
+    # fi
+    ;;
+
   "fe"|"be"|"ai-cpu")
     # 1) join 대기 & 실행
     until aws s3 cp s3://${project_name}-logs/join.sh /home/ec2-user/join.sh; do sleep 5; done
@@ -100,11 +154,10 @@ case "${node_name}" in
     export KUBECONFIG=/home/ec2-user/.kube/config
 
     # 3) Prometheus/Grafana 스택 설치
-    helm repo add grafana https://grafana.github.io/helm-charts
+    # helm repo add grafana https://grafana.github.io/helm-charts
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     helm repo update
     helm install monitoring prometheus-community/kube-prometheus-stack --create-namespace --namespace monitoring
-    helm install my-grafana grafana/grafana --namespace monitoring
 
     # 4) Loki 설치
     helm install loki grafana/loki-stack --namespace monitoring --set promtail.enabled=true --set promtail.serviceMonitor.enabled=true
