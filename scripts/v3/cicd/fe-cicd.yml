@@ -1,0 +1,155 @@
+name: Frontend CI/CD
+
+on:
+  pull_request:
+    branches: ['develop', 'main']
+  push:
+    branches: ['develop', 'main']
+    tags:
+      - 'v*-dev'
+      - 'v*'
+
+
+jobs:
+  setup:
+    name: Setup and Install Dependencies
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    outputs:
+      pnpm_cache_hit: ${{ steps.cache-pnpm.outputs.cache-hit }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+      - name: Cache pnpm modules
+        id: cache-pnpm
+        uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('./pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./
+
+
+  lint-and-unit-test:
+    name: Lint and Unit test
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    needs: [setup]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+      - name: Use cached pnpm modules
+        if: steps.setup.outputs.pnpm_cache_hit == 'true'
+        run: echo "Using cached pnpm modules"
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Delete Duplicates
+        run: |
+          pnpm dedupe
+          pnpm install
+      - name: Run Lint
+        run: |
+          echo "${{  secrets.ENV_FE_ANALYTICS  }}" >> .env
+          echo "${{  secrets.ENV_FE_TEST  }}" >> .env.test
+          echo "${{  secrets.ENV_FE_PROD  }}" >> .env.production
+          pnpm run lint
+      - name: Run Unit Test
+        run: |
+          echo "${{  secrets.ENV_FE_ANALYTICS  }}" >> .env
+          echo "${{  secrets.ENV_FE_TEST  }}" >> .env.test
+          echo "${{  secrets.ENV_FE_PROD  }}" >> .env.production
+          pnpm run test
+
+
+  build:
+    name: Build and Push Docker to ECR (dev)
+    if: >
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/develop')) ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')) || 
+      (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image to ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/leafresh-frontend:latest
+          build-args: |
+            ${{ secrets.ENV_FE_DEV_PROD }}
+            ${{ secrets.ENV_FE_ANALYTICS }}
+
+      - name: Set Status (Prod)
+        id: set-status
+        if: success()
+        run: echo "status=success" >> "$GITHUB_OUTPUT"
+
+      - name: Set Status (Prod Failure)
+        if: failure() && steps.deploy-step.outcome == 'failure' # deploy-step이 실패했을 때만
+        run: echo "status=failure" >> "$GITHUB_OUTPUT"
+
+
+
+  notify:
+    name: Discord Notification
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Message
+        run: | 
+          MESSAGE=""
+          # Build 결과 처리
+          if [[ "${{ needs.build.result }}" != 'skipped' ]]; then
+            STATUS_DEV="${{ needs.build.outputs.status }}"
+            if [ "$STATUS_DEV" = "success" ]; then
+              MESSAGE="${MESSAGE}✅ \`[FE]\` Build 완료\n"
+            elif [ "$STATUS_DEV" = "failure" ]; then
+              MESSAGE="${MESSAGE}🚨 \`[FE]\` Build 실패\n"
+            fi
+          fi
+
+          if [ -z "$MESSAGE" ]; then
+            MESSAGE="⚠️ 배포 상태 정보를 찾을 수 없습니다."
+          fi
+          
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+             ${{ secrets.DISCORD_WEBHOOK_URL }}
