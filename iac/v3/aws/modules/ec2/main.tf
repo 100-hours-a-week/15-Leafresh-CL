@@ -2,7 +2,7 @@
 # Security Groups
 # ────────────────────────────────────────────────────────────────────────────────
 resource "aws_security_group" "k8s" {
-  name_prefix        = "${var.project_name}-sg-k8s-"
+  name_prefix = "${var.project_name}-sg-k8s-"
   description = "Kubernetes components SG"
   vpc_id      = var.vpc_id
 
@@ -109,7 +109,7 @@ resource "aws_security_group" "k8s" {
 }
 
 resource "aws_security_group" "gpu" {
-  name_prefix        = "${var.project_name}-sg-gpu-"
+  name_prefix = "${var.project_name}-sg-gpu-"
   description = "Instance using GPU"
   vpc_id      = var.vpc_id
   # SSH
@@ -184,8 +184,8 @@ resource "aws_key_pair" "ec2" {
 resource "local_file" "private_key" {
   for_each = tls_private_key.ec2
 
-  content  = each.value.private_key_pem
-  filename = "${path.module}/keys/${each.key}.pem"
+  content         = each.value.private_key_pem
+  filename        = "${path.module}/keys/${each.key}.pem"
   file_permission = "0400"
 }
 
@@ -194,56 +194,191 @@ resource "local_file" "private_key" {
 # ────────────────────────────────────────────────────────────────────────────────
 # EC2 Instances
 # ────────────────────────────────────────────────────────────────────────────────
-resource "aws_instance" "nodes" {
-  for_each                    = { for node in var.ec2_nodes : node.name => node }
-  ami                         = each.value.ami
-  instance_type               = each.value.instance_type
-  subnet_id                   = each.value.subnet_id
-  key_name                    = aws_key_pair.ec2[each.key].key_name
-  associate_public_ip_address = each.value.role == "gpu"
+# resource "aws_instance" "nodes" {
+#   for_each                    = { for node in var.ec2_nodes : node.name => node }
+#   ami                         = each.value.ami
+#   instance_type               = each.value.instance_type
+#   subnet_id                   = each.value.subnet_id
+#   key_name                    = aws_key_pair.ec2[each.key].key_name
+#   associate_public_ip_address = each.value.role == "gpu"
 
-  vpc_security_group_ids = [
-    each.value.role == "gpu"
-    ? aws_security_group.gpu.id
-    : aws_security_group.k8s.id
-  ]
+#   vpc_security_group_ids = [
+#     each.value.role == "gpu"
+#     ? aws_security_group.gpu.id
+#     : aws_security_group.k8s.id
+#   ]
 
-  tags = {
-    Name = "${var.project_name}-ec2-${each.key}"
+#   tags = {
+#     Name = "${var.project_name}-ec2-${each.key}"
+#   }
+# }
+
+# resource "aws_launch_template" "template" {
+#   for_each      = { for node in var.ec2_nodes : node.name => node }
+#   name_prefix   = "${var.project_name}-${each.key}-lt"
+#   image_id      = each.value.ami
+#   instance_type = each.value.instance_type
+
+#   # key_name = aws_key_pair.this.key_name # lookup(each.value, "key_name", null)
+#   user_data = base64encode(
+#     templatefile(
+#       "${path.module}/templates/base.sh.tpl",
+#       {
+#         node_name    = each.key
+#         project_name = var.project_name
+#         region       = var.region
+#       }
+#     )
+#   )
+
+#   network_interfaces {
+#     device_index = 0
+#     subnet_id    = each.value.subnet_id
+#     security_groups = [each.value.role == "gpu"
+#       ? aws_security_group.gpu.id
+#     : aws_security_group.k8s.id]
+#     associate_public_ip_address = each.value.role == "gpu"
+#   }
+
+#   tag_specifications {
+#     resource_type = "instance"
+#     tags = {
+#       Name = "${var.project_name}-ec2-lt-${each.key}"
+#     }
+#   }
+# }
+
+locals {
+  ec2_nodes_map = {
+    for node in var.ec2_nodes :
+    node.name => node
   }
 }
 
-resource "aws_launch_template" "template" {
+# resource "aws_iam_instance_profile" "this" {
+#   name = "leafresh-iam-role-eks"
+#   role = "leafresh-iam-role-eks"
+# }
+
+# data "aws_iam_policy_document" "ec2_assume_role" {
+#   statement {
+#     effect = "Allow"
+#     principals {
+#       type        = "Service"
+#       identifiers = ["ec2.amazonaws.com"]
+#     }
+#     actions = ["sts:AssumeRole"]
+#   }
+# }
+
+# resource "aws_iam_role" "s3_uploader" {
+#   name               = "${var.project_name}-s3-uploader"
+#   count              = var.create_s3_uploader_iam ? 1 : 0
+#   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+# }
+
+# resource "aws_iam_policy" "s3_write" {
+#   name  = "${var.project_name}-s3-write"
+#   count = var.create_s3_uploader_iam ? 1 : 0
+#   policy = jsonencode({
+#     Version = "2012-10-17",
+#     Statement = [{
+#       Effect   = "Allow",
+#       Action   = ["s3:PutObject", "s3:PutObjectAcl"],
+#       Resource = "arn:aws:s3:::${var.project_name}-logs/*"
+#     }]
+#   })
+# }
+
+# resource "aws_iam_role_policy_attachment" "attach_s3_write" {
+#   count      = var.create_s3_uploader_iam ? 1 : 0
+#   role       = aws_iam_role.s3_uploader[0].name
+#   policy_arn = aws_iam_policy.s3_write[0].arn
+# }
+
+# resource "aws_iam_instance_profile" "s3_uploader" {
+#   name  = "${var.project_name}-s3-uploader-profile"
+#   count = var.create_s3_uploader_iam ? 1 : 0
+#   role  = aws_iam_role.s3_uploader[0].name
+# }
+
+resource "aws_iam_instance_profile" "this" {
+  count = var.attach_iam ? 1 : 0
+  name  = "leafresh-iam-role-eks"
+  role  = "leafresh-iam-role-eks"
+}
+
+# Launch Template
+resource "aws_launch_template" "this" {
   for_each      = { for node in var.ec2_nodes : node.name => node }
   name_prefix   = "${var.project_name}-${each.key}-lt"
   image_id      = each.value.ami
   instance_type = each.value.instance_type
 
-  # key_name = aws_key_pair.this.key_name # lookup(each.value, "key_name", null)
-  user_data = base64encode(
-    templatefile(
-      "${path.module}/templates/base.sh.tpl",
-      {
-        node_name    = each.key
-        project_name = var.project_name
-        region       = var.region
-      }
-    )
-  )
+
+  # iam_instance_profile {
+  #   name = aws_iam_instance_profile.this.name
+  # }
+
+  # dynamic "iam_instance_profile" {
+  #   for_each = var.attach_iam && length(var.iam_profile_name) > 0 ? [var.iam_profile_name]  : []
+
+  #   content {
+  #     name = iam_instance_profile.each.value
+  #   }
+  # }
 
   network_interfaces {
-    device_index = 0
-    subnet_id    = each.value.subnet_id
-    security_groups = [each.value.role == "gpu"
-      ? aws_security_group.gpu.id
-    : aws_security_group.k8s.id]
-    associate_public_ip_address = each.value.role == "gpu"
+    subnet_id                   = each.value.subnet_id
+    associate_public_ip_address = false
   }
+
+  user_data = base64encode(
+    templatefile("${path.module}/templates/base.sh.tpl", {
+      node_name         = each.key
+      project_name      = var.project_name
+      region            = var.region
+      access_key_id     = var.access_key_id
+      secret_access_key = var.secret_access_key
+    })
+  )
 
   tag_specifications {
     resource_type = "instance"
     tags = {
-      Name = "${var.project_name}-ec2-lt-${each.key}"
+      Name = "${var.project_name}-${each.key}"
+      Role = each.value.role
     }
+  }
+}
+
+# Auto Scaling Group
+resource "aws_autoscaling_group" "this" {
+  for_each = aws_launch_template.this
+
+  name_prefix      = "${var.project_name}-${each.key}-asg"
+  min_size         = 1
+  max_size         = 1
+  desired_capacity = 1
+
+  # Use the subnet from the launch template
+  vpc_zone_identifier = [
+    local.ec2_nodes_map[each.key].subnet_id
+  ]
+
+  launch_template {
+    id      = each.value.id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "${var.project_name}-${each.key}"
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "Role"
+    value               = local.ec2_nodes_map[each.key].role
+    propagate_at_launch = true
   }
 }

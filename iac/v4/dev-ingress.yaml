@@ -1,0 +1,79 @@
+# dev-leafresh-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dev-leafresh-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # HTTPS 설정 및 다른 ALB 어노테이션은 필요에 따라 추가하세요.
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:886436932852:certificate/1360a379-7638-4e80-b55c-4d7e02e12828
+  labels:
+    app: dev-leafresh
+spec:
+  ingressClassName: alb
+  rules:
+  - host: leafresh.click    # dev-leafresh.app # 도메인 이름
+    http:
+      paths:
+      - path: / # 루트 경로 -> Frontend
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80 # frontend-service의 포트
+      - path: /api # /api로 시작하는 모든 경로 -> Backend
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 80 # backend-service의 포트
+      - path: /s3 # /s3로 시작하는 모든 경로 -> Backend
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 80 # backend-service의 포트
+      - path: /oauth # /oauth로 시작하는 모든 경로 -> Backend
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 80 # backend-service의 포트
+  - host: k8s-default-devleafr-fdd09e94f8-666460076.ap-northeast-2.elb.amazonaws.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 80
+      - path: /s3
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 80
+      - path: /oauth
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 80

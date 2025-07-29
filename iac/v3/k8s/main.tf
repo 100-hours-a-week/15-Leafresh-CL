@@ -3,7 +3,7 @@ data "terraform_remote_state" "leafresh" {
   backend = "local"
 
   config = {
-    path = "${path.module}/../aws/terraform.tfstate"  # 또는 절대경로 사용
+    path = "${path.module}/../aws/terraform.tfstate" # 또는 절대경로 사용
   }
 }
 

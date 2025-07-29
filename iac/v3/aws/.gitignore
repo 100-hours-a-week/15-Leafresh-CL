@@ -39,3 +39,4 @@ note.txt
 
 # Ignore Keys
 modules/ec2/keys/**
+modules/vpn/certs/**

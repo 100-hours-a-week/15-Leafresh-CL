@@ -1,6 +1,9 @@
 variable "project_name" { type = string }
 variable "vpc_id" { type = string }
 variable "region" { type = string }
+variable "access_key_id" { type = string }
+variable "secret_access_key" { type = string }
+variable "attach_iam" { type = bool }
 variable "ec2_nodes" {
   type = list(object({
     name          = string
@@ -9,4 +12,8 @@ variable "ec2_nodes" {
     subnet_id     = string
     role          = string
   }))
+}
+variable "iam_profile_name" {
+  type        = string
+  default     = ""
 }

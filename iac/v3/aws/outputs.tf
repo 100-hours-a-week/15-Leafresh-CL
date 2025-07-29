@@ -110,6 +110,26 @@ output "ec2_worker_private_ips" {
   value       = module.ec2_worker.private_ips
 }
 
+# output "launch_template_ids" {
+#   description = "Map of node name to Launch Template ID"
+#   value       = module.ec2_worker.launch_template_ids
+# }
+
+output "asg_ids" {
+  description = "Map of node name to Auto Scaling Group name"
+  value       = module.ec2_worker.asg_ids
+}
+
+# output "asg_names" {
+#   description = "Auto Scaling Group Name for k8s-worker"
+#   value       = module.ec2_worker.asg_names
+# }
+
+output "asg_arns" {
+  description = "Auto Scaling Group ARN for k8s-worker"
+  value       = module.ec2_worker.asg_arns
+}
+
 # ///////////////////////////////////////////////////////////////////////////////
 # // ALB 모듈
 # ///////////////////////////////////////////////////////////////////////////////
@@ -144,15 +164,7 @@ output "ec2_worker_private_ips" {
 ///////////////////////////////////////////////////////////////////////////////
 // ASG 모듈 (k8s-worker 전용)
 ///////////////////////////////////////////////////////////////////////////////
-output "asg_names" {
-  description = "Auto Scaling Group Name for k8s-worker"
-  value       = module.asg.asg_names
-}
 
-output "asg_arns" {
-  description = "Auto Scaling Group ARN for k8s-worker"
-  value       = module.asg.asg_arns
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // VPN 모듈
@@ -171,5 +183,5 @@ output "vpn_endpoint_dns" {
 // ACM Request 모듈
 ///////////////////////////////////////////////////////////////////////////////
 output "certificate_arn" {
-  value = module.acm_leafresh_req.certificate_arn
+  value = module.acm_ingress_req.certificate_arn
 }
