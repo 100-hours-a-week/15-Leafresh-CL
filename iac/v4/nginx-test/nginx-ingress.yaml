@@ -1,0 +1,29 @@
+# nginx-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb # AWS Load Balancer Controller를 사용하도록 지정
+    alb.ingress.kubernetes.io/scheme: internet-facing # 또는 internal
+    alb.ingress.kubernetes.io/target-type: ip # 또는 instance. EKS Fargate는 ip만 지원
+    # alb.ingress.kubernetes.io/group.name: my-app-group # 여러 Ingress를 하나의 ALB로 묶을 때 사용
+    # alb.ingress.kubernetes.io/healthcheck-path: /
+    # alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]' # HTTPS 사용 시
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:YOUR_REGION:YOUR_ACCOUNT_ID:certificate/YOUR_CERT_ID # HTTPS 사용 시 ACM 인증서 ARN
+    # alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-Extd-2021-06 # HTTPS 사용 시 SSL 정책
+  labels:
+    app: nginx
+spec:
+  ingressClassName: alb # Kubernetes 1.19+ 버전에서 사용 권장
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80

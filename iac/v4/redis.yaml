@@ -1,0 +1,22 @@
+# redis.yaml
+image:
+  registry: docker.io
+  repository: bitnami/redis
+  tag: 7.2.4-debian-11-r0
+
+replica:
+  replicaCount: 1
+
+cluster:
+  enabled: false
+
+modules:
+  - name: RedisBloom
+    filepath: /opt/bitnami/redis/modules/redisbloom.so
+
+auth:
+  enabled: false # <-- 이 부분이 false여야 합니다.
+
+persistence:
+  enabled: false # <-- 이 부분이 반드시 false여야 합니다.
+  # size: 8Gi # 이 줄은 있어도 되고 없어도 되지만, enabled: false이면 무시됩니다.
